@@ -1,0 +1,11 @@
+build/
+FINAL/
+build
+q2effect.exe
+q2effect
+*.o
+*.a
+*.sw~
+*.un~
+
+
