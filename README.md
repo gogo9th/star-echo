@@ -1,5 +1,5 @@
 
-#Samsung Q2-YP MP3 Player's Cathedral Sound Effect Generator
+# Samsung Q2-YP MP3 Player's Cathedral Sound Effect Generator
 
 
 This software generates almost the same sound effect as [Samsung YP-Q2 MP3 player firmware](https://github.com/LemonBoy/Q2-Tools)'s Cathedral effect.
