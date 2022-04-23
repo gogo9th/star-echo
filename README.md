@@ -70,7 +70,7 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
 
 <b><u>Step 2.</u></b> Go and install Visual Studio (C++ Development): [https://visualstudio.microsoft.com/ko/downloads/](https://visualstudio.microsoft.com/ko/downloads/)
 
-<b><u>Step 3.</u></b> Install vcpkg.
+<b><u>Step 3.</u></b> Install vcpkg. Open the PowerShell.
 
 ```console
     $ cd ~
