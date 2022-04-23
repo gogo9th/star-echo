@@ -22,17 +22,21 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
 ```console
     $ sudo apt install ffmpeg libboost-program-options-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev
 ```
+<b><u>Step 2.</u></b> Download the source code.
+```console
+    $ git clone https://github.com/gogo9th/yp-q2-cathedral
+```
 
-<b><u>Step 2.</u></b> Compile the source code by using one of the following 2 options:
+<b><u>Step 3.</u></b> Compile the source code by using one of the following 2 options:
 
-* <u>Option 1:</u> Use Makefile to compile.
+* <u>*Option A:*</u> Use Makefile to compile.
 ```console
     $ cd yp-q2-cathedral
     $ make
 ```
-* <u>Option 2:</u> Use CMake to compile.
+* <u>*Option B:*</u> Use CMake to compile.
 ```console
-    $ yp-q2-cathedral
+    $ cd yp-q2-cathedral
     $ mkdir build
     $ cd build
     $ cmake ..

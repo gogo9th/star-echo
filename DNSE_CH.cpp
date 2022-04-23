@@ -1,5 +1,3 @@
-#include "q2cathedral.h"
-
 #include <utility>
 #include <iterator>
 #include <array>
@@ -7,6 +5,7 @@
 #include <vector>
 
 
+#include "q2cathedral.h"
 #include "DNSE_CH.h"
 
 static const uint8_t preset_filters[] = {

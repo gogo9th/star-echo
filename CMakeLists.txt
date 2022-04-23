@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.16)
 
-project ("q2cathedral")
+project ("q2effect")
 
 set(default_build_type "Release")
 
@@ -34,7 +34,7 @@ if (UNIX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif (UNIX)
 
-add_executable(${PROJECT_NAME} "q2cathedral.cpp" "q2cathedral.h" "log.hpp"  "threaded.h"  "filter.h" "DNSE_CH.h" "DNSE_CH.cpp" "mediaProcess.h" "mediaProcess.cpp" "utils.h" )
+add_executable(${PROJECT_NAME} "q2effect.cpp" "q2effect.h" "log.hpp"  "threaded.h"  "filter.h" "DNSE_CH.h" "DNSE_CH.cpp" "mediaProcess.h" "mediaProcess.cpp" "utils.h" )
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} PkgConfig::LIBAV)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
