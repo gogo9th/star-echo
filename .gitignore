@@ -1,8 +1,8 @@
 build/
 FINAL/
 build
-q2effect.exe
-q2effect
+q2cathedral.exe
+q2cathedral
 *.o
 *.a
 *.sw~
