@@ -13,7 +13,7 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
 
 - Already converted files in the past (whose converted version already exists in the `"FINAL"` folder) are skipped. 
 
-- The pre-built software for Windows is [`q2effect_windows.exe`]().
+- The pre-built Windows software is available:  [`q2effect_windows.exe`](https://github.com/gogo9th/yp-q2-cathedral/blob/main/q2effect_windows.exe).
 
 
 ## Ubuntu Installation
