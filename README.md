@@ -43,7 +43,7 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
     $ make
 ```
 
-<b><u>Step 3.</u></b> Run the created `q2cathedral`.
+<b><u>Step 4.</u></b> Run the created `q2cathedral`.
 ```console
     $ ./q2cathedral --help 
     Options:
