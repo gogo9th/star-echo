@@ -1,4 +1,4 @@
-#include "q2effect.h"
+#include "q2cathedral.h"
 
 #include <utility>
 #include <iterator>

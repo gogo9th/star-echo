@@ -1,4 +1,4 @@
-SRC :=  mediaProcess.cpp q2effect.cpp DNSE_CH.cpp
+SRC :=  mediaProcess.cpp q2cathedral.cpp DNSE_CH.cpp
 
 CFLAGS = -O2 -g -pthread -std=c++17
 
@@ -12,11 +12,11 @@ SRC_OBJ := $(SRC:.cpp=.o)
 .cpp.o:
 	g++ -c $(CFLAGS) $< -o $@
 
-all:  q2effect 
+all:  q2cathedral 
 
-q2effect: $(SRC_OBJ)
+q2cathedral: $(SRC_OBJ)
 	g++ -o $@ $(SRC_OBJ) -lavformat -lavcodec -lavutil -lswresample -lboost_program_options -lpthread
 	#g++ -DLIBSSH_STATIC -static -static-libgcc -static-libstdc++ -o $@ $(SRC_OBJ) -lavformat -lavcodec -lavutil -lswresample -lboost_program_options -lpthread -ldl  
 
 clean: 
-	rm -f $(SRC_OBJ) ./q2effect *.o
+	rm -f $(SRC_OBJ) ./q2cathedral *.o

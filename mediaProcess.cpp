@@ -1,5 +1,5 @@
 
-#include "q2effect.h"
+#include "q2cathedral.h"
 
 #ifdef __cplusplus  
 extern "C" {
