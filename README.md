@@ -13,7 +13,7 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
 
 - Already converted music files in the past (whose converted version already exists in the `"FINAL"` folder) are skipped. 
 
-- A pre-built Windows software is available:  [`q2effect_windows.exe`](https://github.com/gogo9th/yp-q2-cathedral/blob/main/q2effect_windows.exe).
+- A pre-built Windows software is available:  [`q2cathedral_windows.exe`](https://github.com/gogo9th/yp-q2-cathedral/blob/main/q2cathedral_windows.exe).
 
 
 ## Ubuntu Installation
@@ -39,9 +39,9 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
     $ make
 ```
 
-<b><u>Step 3.</u></b> Run the created `q2effect`.
+<b><u>Step 3.</u></b> Run the created `q2cathedral`.
 ```console
-    $ ./q2effect --help 
+    $ ./q2cathedral --help 
     Options:
       -h [ --help ]         Display the help message.
       -i [ --input ] arg    Input file(s)/directory.
@@ -96,7 +96,7 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
     $ cmake --build . --config Release
 ```
 
-<b><u>Step 6.</u></b> Check if `q2effect.exe` is created in the Release folder.
+<b><u>Step 6.</u></b> Check if `q2cathedral.exe` is created in the Release folder.
 
 <b><u>Step 7.</u></b> Pack `.exe` and `.dll` files into a single `.exe` file
 
@@ -108,14 +108,14 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
 
 - Add all 6 .dll files in the Release folder: "avcodec-\*.dll", "avformat-\*.dll", "avutil-\*.dll", "boost_program_options-\*.dll", "swresample-\*.dll, zlib*.dll".
 
-- Click "Process" to create `q2effect_boxed.exe`.
+- Click "Process" to create `q2cathedral_boxed.exe`.
 
 
-<b><u>Step 7.</u></b> Run the created `q2effect_boxed.exe`.
+<b><u>Step 7.</u></b> Run the created `q2cathedral_boxed.exe`.
 
 * <u>Option 1:</u> Use a terminal. 
 ```console
     $ cd Release
-    $ ./q2effect_boxed.exe --help 
+    $ ./q2cathedral_boxed.exe --help 
 ```
-* <u>Option 2:</u> Double-click the generated `q2effect_boxed.exe`, then all music files in the same directory will be converted and stored in the `"FINAL"` folder.
+* <u>Option 2:</u> Double-click the generated `q2cathedral_boxed.exe`, then all music files in the same directory will be converted and stored in the `"FINAL"` folder.
