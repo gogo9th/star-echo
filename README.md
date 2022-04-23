@@ -110,7 +110,7 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
 
 - Choose the input file as "qe2ffect.exe" in the Release folder.
 
-- Add all 6 .dll files in the Release folder: "avcodec-\*.dll", "avformat-\*.dll", "avutil-\*.dll", "boost_program_options-\*.dll", "swresample-\*.dll, zlib*.dll".
+- Add all 6 .dll files in the Release folder and press OK: "avcodec-\*.dll", "avformat-\*.dll", "avutil-\*.dll", "boost_program_options-\*.dll", "swresample-\*.dll, zlib*.dll".
 
 - Click "Process" to create `q2cathedral_boxed.exe`.
 
