@@ -120,16 +120,11 @@ int main(int argc, char ** argv)
             std::filesystem::path outputPath = std::filesystem::absolute(output);
             
             for (auto const & dir_entry : std::filesystem::recursive_directory_iterator{ inputPath })
-            {   if (dir_entry.is_regular_file() && dir_entry.path().has_extension() 
+            {  
+					if (dir_entry.is_regular_file() && dir_entry.path().has_extension() 
                     && !isInDirectory(dir_entry.path(), outputPath)) // skip files in the output directory
                 {
                     std::filesystem::path inputFile = dir_entry.path();
-                    std::filesystem::path inputFileRelative = std::filesystem::relative(inputFile, std::filesystem::absolute("."));
-                    std::filesystem::path destinationAbsolute = outputPath / inputFileRelative;
-                    if (!keepFormat)
-                        destinationAbsolute.replace_extension(".flac");
-                    if (std::filesystem::exists(destinationAbsolute)) // if the file was already converted in the past, skip
-                        continue;
                     
                     // filter by file extension
                     if (std::find_if(fileExts_.begin(), fileExts_.end(), [ext = inputFile.extension().string()](const std::string & r)
@@ -144,8 +139,8 @@ int main(int argc, char ** argv)
                         {
                             outputFile.replace_extension(".flac");
                         }
-
-                        inputFiles.push_back({ inputFile, outputFile });
+								if (!std::filesystem::exists(outputFile)) // if the file was already converted in the past, skip
+									inputFiles.push_back({ inputFile, outputFile });
                     }
                 }
             }
