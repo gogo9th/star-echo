@@ -7,5 +7,7 @@ q2cathedral
 *.a
 *.sw~
 *.un~
+cscope.*
+tags
 
 
