@@ -111,12 +111,11 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
 
     // when got EOF there still might be packets in codec
 
-    AVPacket packet;
-    av_init_packet(&packet);
-    packet.data = NULL;
-    packet.size = 0;
+    AVPacket* packet = av_packet_alloc();
+    packet->data = NULL;
+    packet->size = 0;
 
-    if ((r = avcodec_receive_packet(avcodec_out, &packet)) == 0)
+    if ((r = avcodec_receive_packet(avcodec_out, packet)) == 0)
     {
         //if (frame && packet.dts == 0)
         //{
@@ -125,15 +124,15 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
         //}
         // printf(" * %i\n", packet.dts);
 
-        packet.stream_index = streamIndex;
+        packet->stream_index = streamIndex;
 
-        if ((r = av_write_frame(avfmt_out, &packet)) == 0)
+        if ((r = av_write_frame(avfmt_out, packet)) == 0)
         {
             //return r;
         }
         else
         {
-            av_packet_unref(&packet);
+            av_packet_unref(packet);
             throw MPError("failed to write frame", r);
         }
     }
@@ -143,11 +142,11 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
     }
     else if (r != AVERROR_EOF)
     {
-        av_packet_unref(&packet);
+        av_packet_unref(packet);
         throw MPError("failed to receive packet", r);
     }
 
-    av_packet_unref(&packet);
+    av_packet_unref(packet);
 
     return r;
 }
@@ -462,29 +461,28 @@ void MediaProcess::process(const FileItem & item) const
     while (!input_eof)
     {
         {
-            AVPacket packet;
-            av_init_packet(&packet);
-            packet.data = NULL;
-            packet.size = 0;
+            AVPacket* packet = av_packet_alloc();
+            packet->data = NULL;
+            packet->size = 0;
 
         readFrame:
-            r = av_read_frame(avfmt_in, &packet);
+            r = av_read_frame(avfmt_in, packet);
             if (r == 0)
             {
-                if (imageStream && (imageStream->index == packet.stream_index))
+                if (imageStream && (imageStream->index == packet->stream_index))
                 {
                     // write image stream and continue
-                    packet.stream_index = imageStreamOutIndex;
-                    r = av_write_frame(avfmt_out, &packet);
-                    av_packet_unref(&packet);
+                    packet->stream_index = imageStreamOutIndex;
+                    r = av_write_frame(avfmt_out, packet);
+                    av_packet_unref(packet);
                     if (r != 0) throw MPError("failed to write image frame", r);
 
                     goto readFrame;
                 }
-                else if (audioStream->index == packet.stream_index)
+                else if (audioStream->index == packet->stream_index)
                 {
-                    r = avcodec_send_packet(audioCodecIn, &packet);
-                    av_packet_unref(&packet);
+                    r = avcodec_send_packet(audioCodecIn, packet);
+                    av_packet_unref(packet);
                     if (r == 0)
                     {
                         r = avcodec_receive_frame(audioCodecIn, frame_in);
@@ -518,7 +516,7 @@ void MediaProcess::process(const FileItem & item) const
                 else
                 {
                     // unknown stream index
-                    av_packet_unref(&packet);
+                    av_packet_unref(packet);
                     continue;
                 }
             }
