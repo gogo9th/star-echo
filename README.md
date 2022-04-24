@@ -109,9 +109,9 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 
 - Run Enigma Virtual Box.
 
-- Choose the input file to be `"qe2ffect.exe"` in the Release folder.
+- Choose the input file to be `qe2ffect.exe` in the Release folder.
 
-- Add all 6 .dll files in the Release folder and press OK: `"avcodec-\*.dll"`, `"avformat-\*.dll"`, `"avutil-\*.dll"`, `"boost_program_options-\*.dll"`, `"swresample-\*.dll`, `zlib*.dll"`.
+- Add all 6 .dll files in the Release folder and press OK: `avcodec-\*.dll`, `avformat-\*.dll`, `avutil-\*.dll`, `boost_program_options-\*.dll`, `swresample-\*.dll`, `zlib*.dll`.
 
 - Click "Process" to create `q2cathedral_boxed.exe`.
 
