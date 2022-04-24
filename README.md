@@ -116,7 +116,7 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 - Click "Process" to create `q2cathedral_boxed.exe`.
 
 
-<b><u>Step 7.</u></b> Run the created `q2cathedral_boxed.exe`.
+<b><u>Step 8.</u></b> Run the created `q2cathedral_boxed.exe`.
 
 * <u>Option 1:</u> Use a terminal. 
 ```console
