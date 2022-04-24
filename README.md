@@ -13,7 +13,7 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 
 - Already converted music files in the past (whose converted version already exists in the `"FINAL"` folder) are skipped. 
 
-- A pre-built Windows software is available:  [`q2cathedral_windows.exe`](https://github.com/gogo9th/yp-q2-cathedral/blob/main/q2cathedral_windows.exe) (but might get blocked by Windows Defender).
+- A pre-built Windows software is available:  [`q2cathedral_windows.exe`](https://github.com/gogo9th/yp-q2-cathedral/blob/main/q2cathedral_windows.exe) (but might get blocked by Windows Defender, so you need to turn it off).
 
 
 ## Ubuntu Installation (minimum 20.04 required)
