@@ -16,16 +16,16 @@ CFLAGS = -O2 -g -pthread -std=c++17
 SRC_OBJ := $(SRC:.cpp=.o)
 
 .c.o:
-	g++ -c $(CFLAGS) $< -o $@
+	g++-11 -c $(CFLAGS) $< -o $@
 
 .cpp.o:
-	g++ -c $(CFLAGS) $< -o $@
+	g++-11 -c $(CFLAGS) $< -o $@
 
 all:  q2cathedral 
 
 
 q2cathedral: $(SRC_OBJ)
-	g++ -o $@ $(SRC_OBJ) -lavformat -lavcodec -lavutil -lswresample -lboost_program_options -lpthread
+	g++-11 -o $@ $(SRC_OBJ) -lavformat -lavcodec -lavutil -lswresample -lboost_program_options -lpthread
 
 clean: 
 	rm -f q2cathedral *.o *.a
