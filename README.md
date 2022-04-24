@@ -16,7 +16,7 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
 - A pre-built Windows software is available:  [`q2cathedral_windows.exe`](https://github.com/gogo9th/yp-q2-cathedral/blob/main/q2cathedral_windows.exe) (but might get blocked by Windows Defender).
 
 
-## Ubuntu Installation
+## Ubuntu Installation (minimum 20.04 required)
 
 <b><u>Step 1.</u></b> Install the boost and ffmpeg libraries.
 ```console
