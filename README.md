@@ -103,7 +103,7 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 
 <b><u>Step 6.</u></b> Check if `q2cathedral.exe` is created in the Release folder.
 
-<b><u>Step 7.</u></b> Pack `.exe` and `.dll` files into a single `.exe` file
+<b><u>Step 7.</u></b> Pack `.exe` and `.dll` files into a single `.exe` file.
 
 - Download and install Enigma Virtual Box at [https://enigmaprotector.com/en/downloads.html](https://enigmaprotector.com/en/downloads.html).
 
