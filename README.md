@@ -22,12 +22,18 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
 ```console
     $ sudo apt install ffmpeg libboost-program-options-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev
 ```
-<b><u>Step 2.</u></b> Download the source code.
+<b><u>Step 2.</u></b> Install G++ 11 to compile the source code.
+```console
+    $ sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+    $ sudo apt install -y g++-11
+```
+
+<b><u>Step 3.</u></b> Download the source code.
 ```console
     $ git clone https://github.com/gogo9th/yp-q2-cathedral
 ```
 
-<b><u>Step 3.</u></b> Compile the source code by using one of the following 2 options:
+<b><u>Step 4.</u></b> Compile the source code by using one of the following 2 options:
 
 * <u>*Option A:*</u> Use Makefile to compile.
 ```console
@@ -43,7 +49,7 @@ This software generates almost the same sound effect as [Samsung YP-Q2 MP3 playe
     $ make
 ```
 
-<b><u>Step 4.</u></b> Run the created `q2cathedral`.
+<b><u>Step 5.</u></b> Run the created `q2cathedral`.
 ```console
     $ ./q2cathedral --help 
     Options:
