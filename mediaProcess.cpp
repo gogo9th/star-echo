@@ -178,7 +178,7 @@ bool FilterFab::addDesc(const std::string & desc)
         if (boost::iequals(params[0], "ch"))
         {
             int a1 = params.size() > 1 ? std::stoi(params[1]) : 10;
-            int a2 = params.size() > 2 ? std::stoi(params[2]) : 9;
+            int a2 = params.size() > 2 ? std::stoi(params[2]) : 10/*9*/;
             filterCtors_.push_back(std::bind([] (int a1, int a2, int sr)
                                              {
                                                  return std::make_unique<DNSE_CH>(a1, a2, sr);
