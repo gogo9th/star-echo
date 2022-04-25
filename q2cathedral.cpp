@@ -20,7 +20,7 @@ extern "C" {
 
 namespace po = boost::program_options;
 
-static const std::array<std::string, 4> fileExts_{ ".wav", ".flac", ".wma", ".mp3" };
+static const std::array<std::string, 9> fileExts_{ ".aac", ".gsm", ".wav", ".wavpack", ".ass", ".tta",".flac", ".wma", ".mp3" };
 
 
 static std::filesystem::path outputFilePath(const std::filesystem::path & inputPath, std::string outputOptional)

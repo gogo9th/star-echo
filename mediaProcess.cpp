@@ -76,6 +76,7 @@ static scoped_ptr<AVCodecContext> createCodec(AVCodecParameters * codecpar, bool
                                    [] (auto d) { avcodec_free_context(&d); });
     if (!ctx) throw MPError("failed to allocate codec");
 
+    // set the codec's parameters to the ctx
     if ((r = avcodec_parameters_to_context(ctx, codecpar)) < 0)
         throw MPError("avcodec_parameters_to_context", r);
 
@@ -109,8 +110,6 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
         throw MPError("failed to send frame", r);
     }
 
-    // when got EOF there still might be packets in codec
-
     AVPacket* packet = av_packet_alloc();
     packet->data = NULL;
     packet->size = 0;
@@ -126,6 +125,9 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
 
         packet->stream_index = streamIndex;
 
+        // <TIP: write a filtered raw frame to the output file with a proper codec-encoding>
+        // <FLOW: AVFrame frame -> AVCodecContext avcodec_out -> AVPacket packet -> AVFormatContext avfmt_out -> FILE outfile >
+        // Write a (codec-processed) packet to an output media file
         if ((r = av_write_frame(avfmt_out, packet)) == 0)
         {
             //return r;
@@ -136,6 +138,7 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
             throw MPError("failed to write frame", r);
         }
     }
+    // When we got EOF, there might be still remaining packets in AVCodecContext avcodec_out not encoded, yet
     else if (r == AVERROR(EAGAIN))
     {
         return 0;
@@ -143,7 +146,7 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
     else if (r != AVERROR_EOF)
     {
         av_packet_unref(packet);
-        throw MPError("failed to receive packet", r);
+        throw MPError("failed to receive an output packet", r);
     }
 
     av_packet_unref(packet);
@@ -252,17 +255,18 @@ void MediaProcess::process(const FileItem & item) const
     int r;
 
     scoped_ptr<AVFormatContext> avfmt_in([&item] ()
-                                         {
-                                             AVFormatContext * ctx = nullptr;
-                                             int r = avformat_open_input(&ctx, item.input.string().c_str(), NULL, NULL);
-                                             if (r != 0) throw MPError("failed to open input media", r);
-                                             return ctx;
-                                         }(),
-                                         [] (auto * d)
-                                         {
-                                             avformat_close_input(&d);/* avformat_free_context(d); */
-                                         });
+		  {	// open the input music file
+				AVFormatContext * ctx = nullptr;
+				int r = avformat_open_input(&ctx, item.input.string().c_str(), NULL, NULL);
+				if (r != 0) throw MPError("failed to open input media", r);
+				return ctx;
+		  }(),
+		  [] (auto * d)
+		  {
+				avformat_close_input(&d);/* avformat_free_context(d); */
+		  });
 
+    // ensure a stream exists in the input music file
     if ((r = avformat_find_stream_info(avfmt_in, NULL)) < 0)
         throw MPError("no media stream", r);
 
@@ -276,7 +280,7 @@ void MediaProcess::process(const FileItem & item) const
     {
         auto & stream = avfmt_in->streams[i];
 
-        // there might be several attaches pic streams, we pick .. last?
+        // there might be several attaches pic streams, so we pick the last?
         if (stream->disposition & AV_DISPOSITION_ATTACHED_PIC)
         {
             imageStream = stream;
@@ -284,22 +288,25 @@ void MediaProcess::process(const FileItem & item) const
 
         if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
         {
-            if (audioStream) throw MPError("multiple sudio streams not supported");
+            if (audioStream) throw MPError("using multiple audio streams is not supported");
 
             audioStream = stream;
         }
     }
-    if (!audioStream) throw MPError("no audio stream found");
+    if (!audioStream) throw MPError("no audio stream is found");
 
+    // returns AVCodecContext*
     auto audioCodecIn = createCodec(audioStream->codecpar);
     const int srcChannelLayout = audioCodecIn->channel_layout;
 
     auto imageCodecIn = createCodec(imageStream ? imageStream->codecpar : nullptr);
 
-    // *** input converter ***
+    // *** Set up the input format ctx ***
 
     int filterSampleRate = audioCodecIn->sample_rate;
 
+    // SwrContext contains the audio file's sound quality parameters, such as the audio channel left/right flags (mono/stereo), 
+    //  sampling format (e.g., 16 bits), and sampling rate (e.g., 44kHz)
     scoped_ptr<SwrContext> swr_in(nullptr, [] (SwrContext * d) { swr_free(&d); });
 
     {
@@ -307,40 +314,44 @@ void MediaProcess::process(const FileItem & item) const
         else if (filterSampleRate > 48000) filterSampleRate = 48000;
         else if (filterSampleRate != 44100) filterSampleRate = 44100;
 
+        /* Force the input audio channel to have front left & right */
+        /* Force the sampling format to be signed-16-bit-planar */
+        /* Force the sampling rate to be 32k frames-per-sec (kHz), 44fps, or 48fps */
         if (audioCodecIn->channel_layout != (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
             || audioCodecIn->sample_fmt != AV_SAMPLE_FMT_S16P
             || (audioCodecIn->sample_rate != 32000 && audioCodecIn->sample_rate != 44100 && audioCodecIn->sample_rate != 48000))
-        {
+        {   // Arguments: (swr_ctx, out, out, out, in, in, in, log_offset, log_ctx)
             swr_in.reset(swr_alloc_set_opts(NULL,
-                                            AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, AV_SAMPLE_FMT_S16P, filterSampleRate,
-                                            audioCodecIn->channel_layout, audioCodecIn->sample_fmt, audioCodecIn->sample_rate,
-                                            0, NULL));
+               AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, AV_SAMPLE_FMT_S16P, filterSampleRate,
+					audioCodecIn->channel_layout, audioCodecIn->sample_fmt, audioCodecIn->sample_rate,
+               0, NULL));
             if (!swr_in) throw MPError("swr_alloc_set_opts failed");
 
             if ((r = swr_init(swr_in)) != 0) throw MPError("input converter init failed", r);
         }
     }
 
-    // *** output **
+    // *** output format ctx **
 
     scoped_ptr<AVFormatContext> avfmt_out([&item, &tempOut] ()
-                                          {
-                                              int r;
-                                              AVFormatContext * ctx;
-                                              if ((r = avformat_alloc_output_context2(&ctx, 0, 0, item.output.string().c_str())) < 0)
-                                                  throw MPError("failed to allocate output format context", r);
-                                              return ctx;
-                                          }(),
-                                          [] (auto * d)
-                                          {
-                                              avio_closep(&d->pb);
-                                              avformat_free_context(d);
-                                          }
-                                          );
+		{
+			 int r;
+			 AVFormatContext * ctx;
+			 if ((r = avformat_alloc_output_context2(&ctx, 0, 0, item.output.string().c_str())) < 0)
+				  throw MPError("failed to allocate output format context", r);
+			 return ctx;
+		}(),
+		[] (auto * d)
+		{
+			 avio_closep(&d->pb);
+			 avformat_free_context(d);
+		}
+	);
 
     if ((r = avio_open(&avfmt_out->pb, tempOut.string().c_str(), AVIO_FLAG_WRITE)) < 0)
         throw MPError("failed to open output media", r);
 
+    // Tentatively set up the output audio codec paramaters based on the input audio codec parameters
     AVCodecParameters params{};
     params.channels = 2;
     params.channel_layout = AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT;
@@ -350,6 +361,7 @@ void MediaProcess::process(const FileItem & item) const
     params.codec_type = AVMEDIA_TYPE_AUDIO;
     params.format = -1;
 
+    // returns AVCodecContext*
     auto audioCodecOut = createCodec(&params, true);
 
     if (audioCodecOut->frame_size == 0)
@@ -365,7 +377,8 @@ void MediaProcess::process(const FileItem & item) const
     //auto imageCodecOut = createCodec(imageStream ? imageStream->codecpar : nullptr, true);
 
 
-    // Some container formats (like MP4) require global headers to be present.  Mark the encoder so that it behaves accordingly.
+    // Some container formats (like MP4) require global headers to be present.
+    // Mark the encoder so that it behaves accordingly.
     if (avfmt_out->oformat->flags & AVFMT_GLOBALHEADER)
         audioCodecOut->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
@@ -387,7 +400,7 @@ void MediaProcess::process(const FileItem & item) const
         audioStreamOutIndex = stream_out->index;
     }
 
-    if (imageStream)
+    if (imageStream) // for the cover image if exists
     {
         AVStream * stream_out = 0;
         if (!(stream_out = avformat_new_stream(avfmt_out, nullptr/*imageCodecOut->codec*/)))
@@ -407,6 +420,7 @@ void MediaProcess::process(const FileItem & item) const
 
     scoped_ptr<SwrContext> swr_out(nullptr, [] (SwrContext * d) { swr_free(&d); });
 
+    // If the output codec parameter is not what we want (s16p), then create awr_out as a format converter
     if (audioCodecOut->sample_fmt != AV_SAMPLE_FMT_S16P)
     {
         swr_out.reset(swr_alloc_set_opts(NULL,
@@ -429,7 +443,7 @@ void MediaProcess::process(const FileItem & item) const
     }
 
     if ((r = avformat_write_header(avfmt_out, NULL)) < 0)
-        throw MPError("failed to write output file header");
+        throw MPError("failed to write the output file header");
 
 
     // *** process ***
@@ -460,18 +474,22 @@ void MediaProcess::process(const FileItem & item) const
     bool input_eof = false;
     while (!input_eof)
     {
-        {
+        {   
             AVPacket* packet = av_packet_alloc();
             packet->data = NULL;
             packet->size = 0;
 
         readFrame:
+            // Read an encoded frame from the input music file
             r = av_read_frame(avfmt_in, packet);
             if (r == 0)
-            {
+            {   // If this frame is a cover image frame, 
+                //  write it directly to the output music file (AVFormatCtx ctx) without decoding/encoding
                 if (imageStream && (imageStream->index == packet->stream_index))
                 {
-                    // write image stream and continue
+                    // <TIP: Get a cover image frame from an input music file and write it to the ouptut music file>
+                    // <FLOW: AVFormatContext (avfmt_in) -> AVPacket (packet) -> AVFormatContext (avfmt_out) > 
+                    // Write the image stream and continue to read the next frame from the input music file
                     packet->stream_index = imageStreamOutIndex;
                     r = av_write_frame(avfmt_out, packet);
                     av_packet_unref(packet);
@@ -479,12 +497,15 @@ void MediaProcess::process(const FileItem & item) const
 
                     goto readFrame;
                 }
+                // If this frame is an audio frame, send it to the input audioc codec (audioCodecIn) to decode it 
                 else if (audioStream->index == packet->stream_index)
                 {
                     r = avcodec_send_packet(audioCodecIn, packet);
                     av_packet_unref(packet);
                     if (r == 0)
-                    {
+                    {   // <TIP: get a raw frame from the input music file with a proper codec-decoding>
+                        // <FLOW: AVFormatContext (avfmt_in) -> AVPacket (packet) -> AVCodexContext (audioCodecIn) 
+                        //   -> AVFrame (frame_in) >
                         r = avcodec_receive_frame(audioCodecIn, frame_in);
                         if (r == 0 || r == AVERROR_EOF)
                         {
@@ -521,60 +542,71 @@ void MediaProcess::process(const FileItem & item) const
                 }
             }
         }
-
+        // If some non-zero sample size of the input frame is successfully decoded 
         if (r != AVERROR_EOF && frame_in->nb_samples > 0)
-        {
+        {   // If the current channel's layout id is different than the one specified in the input codec
             if (frame_in->channel_layout != srcChannelLayout)
             {
-                // oh layout can change in the middle lol
+                // Oh, the channel layout can dynamically change in the middle lol
                 throw MPError("channel layout had changed in the middle");
             }
 
-            // expecting planar layout
+            // Our filter expects the input to be signed a stereo 16-bit planar layout, so our data type is int16_t 
             int16_t * lbIn;
             int16_t * rbIn;
 
+            // This is the input music file's decoded raw frame
             int nb_samples = frame_in->nb_samples;
 
+            // If the input music file is NOT in the format we want (44kHz stereo, signe 16 bits, planar)
             if (swr_in)
             {
                 // frame -> l/rb
 
-                // an upper bound 
+                // An upper bound on the number of samples that the next swr_convert will output
                 auto swrOutSamples = swr_get_out_samples(swr_in, nb_samples);
+                
+                // Dynamically increase the lb, rb vector size to be the maximum number of samples 
+                //  across all decoded raw frames of the input music file
                 if (lb.size() < swrOutSamples) lb.resize(swrOutSamples);
                 if (rb.size() < swrOutSamples) rb.resize(swrOutSamples);
 
                 uint8_t * buffers[] = { (uint8_t *)lb.data(), (uint8_t *)rb.data() };
 
+                // Convert the input music file's decoded raw frame to be our desired format (signed 16-bits, planar, 44100 fps)
                 nb_samples = swr_convert(swr_in, buffers, swrOutSamples, (const uint8_t **)frame_in->data, nb_samples);
                 // cannot // assert(nb_samples == cwrOutSamples);
 
                 lbIn = lb.data();
                 rbIn = rb.data();
             }
+            // If the input music file is in the format we want
             else
             {
                 lbIn = (int16_t *)frame_in->data[0];
                 rbIn = (int16_t *)frame_in->data[1];
 
-                // prepare room for filter
+                // Prepare room for the filter
                 if (lb.size() < nb_samples) lb.resize(nb_samples);
                 if (rb.size() < nb_samples) rb.resize(nb_samples);
             }
 
-            // filter
+            // Filter-processing
 
-            // convert can produce no samples ... if input is like 1 sample ... uhhh 
+            // convert can produce no samples ... if the input is like 1 sample ... uhhh 
             if (nb_samples > 0)
             {
+                
+                // These are for output data (after filter-processing)
                 if (lbOut.size() < nb_samples) lbOut.resize(nb_samples);
                 if (rbOut.size() < nb_samples) rbOut.resize(nb_samples);
 
+                // Our prototype had only 1 filter: CH (Cathedral)
                 for (auto & filter : filters)
                 {
                     filter->filter(lbIn, rbIn, lbOut.data(), rbOut.data(), nb_samples);
 
+                    // Reuse the same lb, rb, lbOut, rbOut buffers when processing through multiple filters
                     if (filters.size() > 1)
                     {
                         lb.swap(lbOut);
@@ -584,6 +616,8 @@ void MediaProcess::process(const FileItem & item) const
                     }
                 }
 
+                // An extra processing to make the output frame to be our desired 
+                //  channel layout, sampling rate, sample format (44kHz/48kHz/32kHz stereo s16p)
                 if (swr_out)
                 {
                     // l/rbOut -> fifo buffers
@@ -591,7 +625,8 @@ void MediaProcess::process(const FileItem & item) const
                     auto swrOutSamples = swr_get_out_samples(swr_out, nb_samples);
                     auto channels = av_get_channel_layout_nb_channels(audioCodecOut->channels);
                     auto bs = av_samples_get_buffer_size(0, channels, swrOutSamples, audioCodecOut->sample_fmt, 0);
-                    // resize to required size but send both buffers even for interleaved
+
+                    // Resize to required size but send both buffers even for interleaved
                     if (lb.size() < bs) lb.resize(bs);
                     if (rb.size() < bs) rb.resize(bs);
 
@@ -601,9 +636,9 @@ void MediaProcess::process(const FileItem & item) const
                     nb_samples = swr_convert(swr_out, buffersOut, bs, (const uint8_t **)buffersIn, nb_samples);
                     writeToFifo(fifo, (void **)buffersOut, nb_samples);
                 }
+                // If the output is already stereo S16P 32kHz/44kHz/48kHz
                 else
                 {
-                    // output is S16P
                     uint8_t * buffers[] = { (uint8_t *)lbOut.data(), (uint8_t *)rbOut.data() };
                     writeToFifo(fifo, (void **)buffers, nb_samples);
                 }
@@ -618,21 +653,22 @@ void MediaProcess::process(const FileItem & item) const
     fflushFifo:
 
         const int samplesAvail = av_audio_fifo_size(fifo);
-
-        // the frameSize is max chunk we can send to output codec and it can be less that data available
+        // The frameSize is max chunk we can send to the output codec and this can be less than the filtered available frame data
         const int frameSize = audioCodecOut->frame_size > 0 ? audioCodecOut->frame_size : samplesAvail;
+
+        // If no frame has been written and there is no available output frame, then this is an empty file, so finish
         if (frameSize == 0 || samplesAvail == 0)
         {
             break;
         }
 
-        // when sending last frame size is less than frame size
-        if (samplesAvail >= frameSize
-            || input_eof)
+        // When the frame is the last one, the available size is equal to or less than the frame size
+        // When the frame is not the last one, the available size is more than the frame size
+        if (samplesAvail >= frameSize || input_eof)
         {
             scoped_ptr<AVFrame> frame_out(av_frame_alloc(),
                                           [] (auto * d) { av_frame_free(&d); });
-            if (!frame_out) throw MPError("failed to allocate frame");
+            if (!frame_out) throw MPError("failed to allocate an output frame");
 
             frame_out->format = audioCodecOut->sample_fmt;
             frame_out->channel_layout = audioCodecOut->channel_layout;
@@ -640,21 +676,22 @@ void MediaProcess::process(const FileItem & item) const
             frame_out->sample_rate = audioCodecOut->sample_rate;
 
             do
-            {
+            {   // This is correct number of maximum samples to read for both the last and non-last frames
                 frame_out->nb_samples = std::min(samplesAvail, frameSize);
-                // Set a timestamp based on the sample rate for the container.
+                // Set a timestamp (i.e., the total elapsed time) based on the sample rate of the container.
                 frame_out->pts = Pts(frame_out->nb_samples);
 
                 if (!av_frame_is_writable(frame_out))
                 {
-                    // we're in loop so dont allocate buffer each time
+                    // We're in a while loop, so reuse the buffer we have in frame_out
                     if ((r = av_frame_get_buffer(frame_out, 0)) < 0)
                         throw MPError("av_frame_get_buffer");
                 }
-
+                // Read the filtered frame of the exact size we expect
                 if (av_audio_fifo_read(fifo, (void **)frame_out->data, frame_out->nb_samples) < frame_out->nb_samples)
                     throw MPError("failed to read from fifo");
 
+                // Write the frame to the output music file
                 if ((r = encodeFrame(frame_out, avfmt_out, audioCodecOut, audioStreamOutIndex)) != 0)
                 {
                     break;
@@ -665,10 +702,12 @@ void MediaProcess::process(const FileItem & item) const
 
     if (r == 0)
     {
+        // Encode all unencoded remaining data and flush them to the output music file
         do {} while (encodeFrame(NULL, avfmt_out, audioCodecOut, audioStreamOutIndex) == 0);
 
+        // Flush all encoded remaining data to the output music file
         if ((r = av_write_trailer(avfmt_out)) < 0)
-            throw MPError("failed to write output file trailer", r);
+            throw MPError("failed to write output the file trailer", r);
 
         audioCodecOut.reset();
         avfmt_out.reset();

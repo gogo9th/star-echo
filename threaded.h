@@ -9,8 +9,9 @@
 
 #include "log.hpp"
 
-
-template<typename Workitem, typename Worker>
+// <arguments_list, class object> for threading
+// The class object's object::operator() should be overloaded to call it like (object)(arguments_list) for each thread
+template<typename Workitem, typename Worker> 
 class ThreadedWorker
 {
     ThreadedWorker(const ThreadedWorker &) = delete;
@@ -25,7 +26,7 @@ public:
 
         msg() << "Using " << maxThreads_ << " CPU threads...";
         for (int i = 0; i < maxThreads_; i++)
-        {
+        {	// create a new thread, passing: (threading function address, this scope's address, custom argument);
             threads_.push_back(std::thread(&ThreadedWorker::threadRun, this, i));
         }
     }
