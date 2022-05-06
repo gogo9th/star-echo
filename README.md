@@ -15,6 +15,7 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 
 - A pre-built Windows software is available:  [`q2cathedral_windows.exe`](https://github.com/gogo9th/yp-q2-cathedral/blob/main/q2cathedral_windows.exe) (but might get blocked by Windows Defender, so you need to turn it off).
 
+- Music File Conversion Web Server: [https://q2cathedral.com](https://q2cathedral.com)
 
 ## Ubuntu Installation (minimum 20.04 required)
 
