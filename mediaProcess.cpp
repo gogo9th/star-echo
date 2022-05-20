@@ -310,7 +310,7 @@ void MediaProcess::process(const FileItem & item) const
     scoped_ptr<SwrContext> swr_in(nullptr, [] (SwrContext * d) { swr_free(&d); });
 
     {
-        if (filterSampleRate =< 32000) filterSampleRate = 32000;
+        if (filterSampleRate <= 32000) filterSampleRate = 32000;
         else if (filterSampleRate >= 48000) filterSampleRate = 48000;
         else if (filterSampleRate != 44100) filterSampleRate = 44100;
 
