@@ -1,0 +1,37 @@
+import "oaidl.idl";
+import "ocidl.idl";
+
+import "audioenginebaseapo.idl";
+
+
+[
+    object,
+    uuid(442A503D-5028-4061-A175-BDB83F811189),
+    pointer_default(unique)
+]
+interface IQ2APOMFX : IUnknown
+{};
+
+[
+    uuid(21E61DA7-E567-485A-9D40-6A99A827AAED),
+    version(1.0)
+]
+library Q2APOLib
+{
+    //importlib("stdole2.tlb");
+
+    [
+        uuid(B551B56A-FB72-44D0-B545-C66911A8EFC8)
+    ]
+    coclass Q2APOMFX
+    {
+        interface IAudioProcessingObject;
+        interface IAudioProcessingObjectRT;
+        //interface IAudioProcessingObjectConfiguration;
+        // interface IAudioSystemEffects
+        interface IAudioSystemEffects2;
+        //interface IAudioSystemEffectsCustomFormats;
+        // interface IMMNotificationClient
+        [default] interface IQ2APOMFX;
+    };
+}

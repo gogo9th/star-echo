@@ -1,0 +1,13 @@
+HKCR
+{
+        NoRemove CLSID
+        {
+                ForceRemove {B551B56A-FB72-44D0-B545-C66911A8EFC8} = s 'Q2APOMFX Class'
+                {
+                        InprocServer32 = s '%MODULE%'
+                        {
+                                val ThreadingModel = s 'Both'
+                        }
+                }
+        }
+}

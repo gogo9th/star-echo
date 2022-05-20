@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="DllMain.cpp" />
+    <ClCompile Include="Q2APO.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Q2APO_i.c">
+      <Filter>Generated</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\DNSE_CH.cpp">
+      <Filter>Q2</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Q2APO.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Q2APO_h.h">
+      <Filter>Generated</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="log.hpp" />
+    <ClInclude Include="..\..\DNSE_CH.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Q2APO.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Generated">
+      <UniqueIdentifier>{4b45c693-5909-4a9d-92f0-60de89d51494}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{1e038216-e268-49bb-bea4-d4ebf001888a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Q2">
+      <UniqueIdentifier>{87c49949-ca10-42ed-b8c1-c1073db8c702}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc">
+      <Filter>Resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="Q2APO.idl" />
+  </ItemGroup>
+</Project>

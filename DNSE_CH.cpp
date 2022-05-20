@@ -618,7 +618,7 @@ public:
         v66 += shift_;
         if (v66 > 0x20000000)
         {
-            v66 = 0xE0000000;
+            v66 = -0x20000000;
         }
         auto pre_offset = (vbr_delay_ << 12) + ggain_ * (abs(v66) >> 17);
         auto offset = (pre_offset >> 12);
@@ -723,8 +723,8 @@ DNSE_CH::DNSE_CH(int roomSize, int gain, int sampleRate)
     ch2_->add(std::make_unique<APFilter>(std::min(presetFilter->ap6_delay, 1637), presetFilter->ap6_gain));
     ch2_->add(std::make_unique<APFilter>(std::min(presetFilter->ap7_delay, 2749), presetFilter->ap7_gain));
     ch2_->add(std::make_unique<APFilter>(std::min(presetFilter->ap8_delay, 3079), presetFilter->ap8_gain));
-
     ch2_->add(std::make_unique<VbrFilter>(std::min(vbr2_delay, 3038), presetFilter->vbr2_gain, 0x17c6, 0xc0));
+
     delay2_ = std::make_unique<DelayShiftFilter>(std::min(presetFilter->delay2_delay, 2833),
                                                  presetFilter->delay2_gain,
                                                  presetFilter->absorb,
@@ -734,36 +734,32 @@ DNSE_CH::DNSE_CH(int roomSize, int gain, int sampleRate)
 DNSE_CH::~DNSE_CH()
 {}
 
-void DNSE_CH::filter(const int16_t * lb, const int16_t * rb,
-                     int16_t * lb_out, int16_t * rb_out,
-                     int nSamples)
+void DNSE_CH::filter(int16_t l, const int16_t r,
+                     int16_t * l_out, int16_t * r_out)
 {
-    for (size_t i = 0; i < nSamples; i++)
-    {
-        auto sum = (lb[i] + rb[i]) >> 2;
+    auto sum = (l + r) >> 2;
 
-        auto tone = toneFilter_->filter(sum);
-        auto [ls, rs] = dsFilter_->filter2(tone);
+    auto tone = toneFilter_->filter(sum);
+    auto [ls, rs] = dsFilter_->filter2(tone);
 
-        auto ap1 = er_ap1_->filter(ls);
-        auto ap2 = er_ap2_->filter(rs);
+    auto ap1 = er_ap1_->filter(ls);
+    auto ap2 = er_ap2_->filter(rs);
 
-        auto sec1in = ap1 - delay2_->last();
-        auto sec2in = ap2 + delay1_->last();
+    auto sec1in = ap1 - delay2_->last();
+    auto sec2in = ap2 + delay1_->last();
 
-        auto dr1 = delay1_->filter(ch1_->filter(sec1in));
-        auto dr2 = delay2_->filter(ch2_->filter(sec2in));
+    auto dr1 = delay1_->filter(ch1_->filter(sec1in));
+    auto dr2 = delay2_->filter(ch2_->filter(sec2in));
 
-        auto r1 = ((dr1 * presetGain_->r_gain + ap1 * presetGain_->er_gain) >> 12);
-        auto r2 = ((dr2 * presetGain_->r_gain + ap2 * presetGain_->er_gain) >> 12);
+    auto r1 = ((dr1 * presetGain_->r_gain + ap1 * presetGain_->er_gain) >> 12);
+    auto r2 = ((dr2 * presetGain_->r_gain + ap2 * presetGain_->er_gain) >> 12);
 
-        r1 = (r1 + lb[i]) >> 1;
-        r2 = (r2 + rb[i]) >> 1;
+    r1 = (r1 + l) >> 1;
+    r2 = (r2 + r) >> 1;
 
-        r1 = std::min(0x7FFF, std::max(-0x8000, r1));
-        r2 = std::min(0x7FFF, std::max(-0x8000, r2));
+    r1 = std::min(0x7FFF, std::max(-0x8000, r1));
+    r2 = std::min(0x7FFF, std::max(-0x8000, r2));
 
-        lb_out[i] = r1;
-        rb_out[i] = r2;
-    }
+    *l_out = r1;
+    *r_out = r2;
 }

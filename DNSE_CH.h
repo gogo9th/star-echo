@@ -10,11 +10,11 @@ public:
     DNSE_CH(int roomSize, int gain, int sampleRate);
     ~DNSE_CH();
 
-    virtual void filter(const int16_t * lb, const int16_t * rb,
-                        int16_t * lb_out, int16_t * rb_out,
-                        int nSamples) override;
+    virtual void filter(int16_t l, const int16_t r,
+                        int16_t * l_out, int16_t * r_out) override;
+
 private:
-    class PresetGain;
+    struct PresetGain;
     class FilterChain;
     class APFilter;
     class DelayFilter;

@@ -9,5 +9,6 @@ q2cathedral
 *.un~
 cscope.*
 tags
+.vs
 
 
