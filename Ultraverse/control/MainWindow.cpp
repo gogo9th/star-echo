@@ -38,7 +38,7 @@ INT_PTR MainWindow::dlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (wParam == SC_CLOSE)
             {
                 EndDialog(hWnd_, TRUE);
-                PostQuitMessage(0);
+                //PostQuitMessage(0);
                 return(TRUE);
             }
             break;

@@ -6,12 +6,11 @@
 #include <audioenginebaseapo.h>
 #include <BaseAudioProcessingObject.h>
 
-#include "Q2APO.h"
 #include "Q2APO_h.h"
 #include "resource.h"
 
-#include "DNSE_CH.h"
 
+class DNSE_CH;
 
 #pragma AVRT_CONST_BEGIN
 
@@ -45,12 +44,8 @@ public:
 
     DECLARE_PROTECT_FINAL_CONSTRUCT()
 
-    Q2APOMFX()
-        : CBaseAudioProcessingObject(regProperties)
-    {}
-
-    virtual ~Q2APOMFX()
-    {}
+    Q2APOMFX();
+    ~Q2APOMFX();
 
     // IAudioProcessingObject
     STDMETHOD(GetLatency)(HNSTIME * pTime);
@@ -93,5 +88,3 @@ private:
 };
 
 #pragma AVRT_CONST_END
-
-OBJECT_ENTRY_AUTO(__uuidof(Q2APOMFX), Q2APOMFX)

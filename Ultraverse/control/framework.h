@@ -17,25 +17,16 @@
 #include <string>
 #include <string_view>
 #include <cassert>
+#include <string>
+#include <string_view>
+#include <exception>
+#include <stdexcept>
 
+using namespace std::literals::string_literals;
+using namespace std::literals::string_view_literals;
+
+#include "common/error.h"
 
 HINSTANCE hInstance();
 const wchar_t * appNameW();
-
-
-class Error : public std::runtime_error
-{
-public:
-    Error(const char * msg)
-        : runtime_error(msg)
-    {}
-
-    Error(const char * msg, int errorCode)
-        : runtime_error(std::string(msg) + " (" + std::to_string(errorCode) + ")")
-    {}
-
-    static Error gle(const char * msg)
-    {
-        return Error(msg, GetLastError());
-    }
-};
+const char * appName();

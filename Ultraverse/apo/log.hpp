@@ -98,6 +98,6 @@ template<typename T>
 std::basic_ostream<T> & operator<<(std::basic_ostream<T> & os, const GUID & guid)
 {
     wchar_t szGUID[64] = { 0 };
-    StringFromGUID2(guid, szGUID, 64);
+    StringFromGUID2(guid, szGUID, (int)std::size(szGUID));
     return os << szGUID;
 }

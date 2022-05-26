@@ -12,6 +12,11 @@ public:
     MainWindow(DLGPROC dlgProc);
     ~MainWindow();
 
+    operator HWND() const
+    {
+        return hWnd_;
+    }
+
     void create();
 
     void show(bool visible = true)

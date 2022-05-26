@@ -1,4 +1,5 @@
 #include "framework.h"
+
 #include "icon.h"
 
 Icon::Icon(int id)

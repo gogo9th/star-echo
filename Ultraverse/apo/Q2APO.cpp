@@ -2,11 +2,14 @@
 
 #include <audioengineextensionapo.h>
 
+#include "DNSE_CH.h"
 #include "Q2APO.h"
 #include "log.hpp"
 
 #pragma comment(lib, "legacy_stdio_definitions.lib")
 
+
+OBJECT_ENTRY_AUTO(__uuidof(Q2APOMFX), Q2APOMFX)
 
 const CRegAPOProperties<1> Q2APOMFX::regProperties(
     __uuidof(Q2APOMFX),
@@ -116,6 +119,20 @@ std::basic_ostream<T> & operator<<(std::basic_ostream<T> & os, const UNCOMPRESSE
 }
 
 //
+
+Q2APOMFX::Q2APOMFX()
+    : CBaseAudioProcessingObject(regProperties)
+{
+    //wchar_t apoGUID[64] = { 0 };
+    //StringFromGUID2(__uuidof(Q2APOMFX), apoGUID, (int)std::size(apoGUID));
+
+    msg() << "Creating";
+}
+
+Q2APOMFX::~Q2APOMFX()
+{
+    msg() << "Deleting";
+}
 
 STDMETHODIMP Q2APOMFX::GetLatency(HNSTIME * pTime)
 {
