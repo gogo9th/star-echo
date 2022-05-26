@@ -77,7 +77,7 @@ int main(int argc, char ** argv)
         ("input,i", po::value(&input)->composing(), "Input file(s)/directory.\n- [Default: the current directory]")
         ("output,o", po::value(&output), "If the input is a directory, then output should be a directory.\nIf the input is a file, then the output should be a filename.\nIf the inputs are multiple files, then this option is ignored.\n- [Default: './FINAL' directory]")
         ("threads,t", po::value(&threads)->composing(), "The number of CPU threads to run.\n- [Default: the processor's available total cores]")
-        ("filter,f", po::value(&filters)->composing(), "Filter(s) to be applied:\n CH[,roomSize[,gain]].\n- [Default: CH[10,10]] (where 'CH' is Cathedral)")
+        ("filter,f", po::value(&filters)->composing(), "Filter(s) to be applied:\n CH[,roomSize[,gain]].\n- [Default: 'CH,10,10'] (where 'CH' is Cathedral)")
         ("keepFormat,k", po::bool_switch(&keepFormat)->default_value(false), "Keep each output file's format to each the same as its source file's.\n- [Default: the output format is .flac]")
         ;
     po::positional_options_description posd;
