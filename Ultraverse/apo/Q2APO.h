@@ -8,6 +8,7 @@
 
 #include "Q2APO_h.h"
 #include "resource.h"
+#include "common/scopedResource.h"
 
 
 class DNSE_CH;
@@ -81,10 +82,24 @@ public:
 
 private:
     bool checkFormat(const UNCOMPRESSEDAUDIOFORMAT & pRequestedFormat);
+    void settingsMonitor();
+    void parseSettings(const std::wstring & settings);
+    void createDnse();
 
-    std::unique_ptr<DNSE_CH> dnse_;
+    bool    errorOnce_ = false;
 
-    bool isPCM_ = false;
+    std::recursive_mutex        dnseSettingMtx_;
+    int                         chRoomSize_ = 0;
+    int                         chGain_ = 0;
+
+    std::mutex                  dnseMtx_;
+    std::unique_ptr<DNSE_CH>    dnse_;
+
+    bool lockedIsPCM_ = false;
+    bool lockedSampleRate_ = 0;
+
+    std::thread settingMonitorThread_;
+    Handle      stopSettingMonitorEvent_;
 };
 
 #pragma AVRT_CONST_END

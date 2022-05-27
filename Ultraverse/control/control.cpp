@@ -50,18 +50,6 @@ enum
 std::unique_ptr<MainWindow> mw_;
 static INT_PTR WINAPI dlgProc_(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
-    {
-        case NI_OperaHall:
-            break;
-        case NI_LiveCafe:
-            break;
-        case NI_Disable:
-            break;
-        case NI_Setup:
-            break;
-    }
-
     return mw_->dlgProc(hWnd, uMsg, wParam, lParam);
 }
 
@@ -150,8 +138,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         MSG msg;
         while (GetMessage(&msg, nullptr, 0, 0))
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            switch (msg.message)
+            {
+                case NI_OperaHall:
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
+                    Settings::set(setOperaHall);
+                    break;
+                case NI_LiveCafe:
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
+                    Settings::set(setLiveCafe);
+                    break;
+                case NI_Disable:
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Disable, MF_BYCOMMAND);
+                    Settings::set(Settings::disabled());
+                    break;
+                case NI_Setup:
+                    break;
+
+                default:
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+            }
         }
 
         return 0;

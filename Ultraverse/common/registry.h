@@ -5,7 +5,7 @@
 namespace Registry
 {
 
-HKey openKey(std::wstring_view key, REGSAM samDesired);
+HKey openKey(std::wstring_view key, REGSAM samDesired = KEY_QUERY_VALUE | KEY_WOW64_64KEY);
 void createKey(std::wstring_view key);
 void setKeyWritable(std::wstring_view key);
 

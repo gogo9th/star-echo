@@ -161,13 +161,13 @@ void setValue(const HKey & key, std::wstring_view name, unsigned long value)
 
 void getValue(std::wstring_view key, std::wstring_view name, std::wstring & value)
 {
-    auto hKey = openKey(key, KEY_QUERY_VALUE | KEY_WOW64_64KEY);
+    auto hKey = openKey(key);
     return getValue(hKey, name, value);
 }
 
 void getValue(std::wstring_view key, std::wstring_view name, unsigned long & value)
 {
-    auto hKey = openKey(key, KEY_QUERY_VALUE | KEY_WOW64_64KEY);
+    auto hKey = openKey(key);
     return getValue(hKey, name, value);
 }
 

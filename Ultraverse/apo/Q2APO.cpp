@@ -6,7 +6,13 @@
 #include "Q2APO.h"
 #include "log.hpp"
 
-#pragma comment(lib, "legacy_stdio_definitions.lib")
+#include "common/stringUtils.h"
+#include "common/registry.h"
+#include "common/settings.h"
+#include "common/error.h"
+
+
+#pragma comment(lib, "legacy_stdio_definitions.lib")    // _vsnwprintf
 
 
 OBJECT_ENTRY_AUTO(__uuidof(Q2APOMFX), Q2APOMFX)
@@ -32,13 +38,13 @@ static const struct
     UNCOMPRESSEDAUDIOFORMAT format;
     LPCWSTR                 name;
 }
-_availableFormatsPcm[] =
+availableFormatsPcm_[] =
 {
     {{KSDATAFORMAT_SUBTYPE_PCM, 2, 2, 16, 32000, KSAUDIO_SPEAKER_STEREO}, L"Wave 32 KHz, 16-bit, stereo"},
     {{KSDATAFORMAT_SUBTYPE_PCM, 2, 2, 16, 44100, KSAUDIO_SPEAKER_STEREO}, L"Wave 44.1 KHz, 16-bit, stereo"},
     {{KSDATAFORMAT_SUBTYPE_PCM, 2, 2, 16, 48000, KSAUDIO_SPEAKER_STEREO}, L"Wave 48 KHz, 16-bit, stereo"},
 },
- _availableFormatsFloat[] =
+ availableFormatsFloat_[] =
 {
     {{KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, 2, 4, 32, 32000, KSAUDIO_SPEAKER_STEREO}, L"Wave 32 KHz, float, stereo"},
     {{KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, 2, 4, 32, 44100, KSAUDIO_SPEAKER_STEREO}, L"Wave 44.1 KHz, float, stereo"},
@@ -122,16 +128,23 @@ std::basic_ostream<T> & operator<<(std::basic_ostream<T> & os, const UNCOMPRESSE
 
 Q2APOMFX::Q2APOMFX()
     : CBaseAudioProcessingObject(regProperties)
+    , settingMonitorThread_(&Q2APOMFX::settingsMonitor, this)
+    , stopSettingMonitorEvent_(CreateEventW(NULL, TRUE, FALSE, NULL))
 {
-    //wchar_t apoGUID[64] = { 0 };
-    //StringFromGUID2(__uuidof(Q2APOMFX), apoGUID, (int)std::size(apoGUID));
-
     msg() << "Creating";
+
+    parseSettings(Settings::current());
 }
 
 Q2APOMFX::~Q2APOMFX()
 {
     msg() << "Deleting";
+
+    SetEvent(stopSettingMonitorEvent_);
+    if (settingMonitorThread_.joinable())
+    {
+        settingMonitorThread_.join();
+    }
 }
 
 STDMETHODIMP Q2APOMFX::GetLatency(HNSTIME * pTime)
@@ -207,21 +220,21 @@ STDMETHODIMP Q2APOMFX::IsInputFormatSupported(IAudioMediaType * pOutputFormat,
 
         if (ucReq.guidFormatType == KSDATAFORMAT_SUBTYPE_PCM)
         {
-            if (ucReq.fFramesPerSecond <= _availableFormatsPcm[0].format.fFramesPerSecond)
-                proposed = &_availableFormatsPcm[0].format;
-            else if (ucReq.fFramesPerSecond >= _availableFormatsPcm[std::size(_availableFormatsPcm) - 1].format.fFramesPerSecond)
-                proposed = &_availableFormatsPcm[std::size(_availableFormatsPcm) - 1].format;
+            if (ucReq.fFramesPerSecond <= availableFormatsPcm_[0].format.fFramesPerSecond)
+                proposed = &availableFormatsPcm_[0].format;
+            else if (ucReq.fFramesPerSecond >= availableFormatsPcm_[std::size(availableFormatsPcm_) - 1].format.fFramesPerSecond)
+                proposed = &availableFormatsPcm_[std::size(availableFormatsPcm_) - 1].format;
             else
-                proposed = &_availableFormatsPcm[1].format;
+                proposed = &availableFormatsPcm_[1].format;
         }
         else if (ucReq.guidFormatType == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
         {
-            if (ucReq.fFramesPerSecond <= _availableFormatsFloat[0].format.fFramesPerSecond)
-                proposed = &_availableFormatsFloat[0].format;
-            else if (ucReq.fFramesPerSecond >= _availableFormatsFloat[std::size(_availableFormatsFloat) - 1].format.fFramesPerSecond)
-                proposed = &_availableFormatsFloat[std::size(_availableFormatsFloat) - 1].format;
+            if (ucReq.fFramesPerSecond <= availableFormatsFloat_[0].format.fFramesPerSecond)
+                proposed = &availableFormatsFloat_[0].format;
+            else if (ucReq.fFramesPerSecond >= availableFormatsFloat_[std::size(availableFormatsFloat_) - 1].format.fFramesPerSecond)
+                proposed = &availableFormatsFloat_[std::size(availableFormatsFloat_) - 1].format;
             else
-                proposed = &_availableFormatsFloat[1].format;
+                proposed = &availableFormatsFloat_[1].format;
         }
         else
         {
@@ -303,10 +316,10 @@ STDMETHODIMP Q2APOMFX::LockForProcess(UINT32 u32NumInputConnections, APO_CONNECT
         return CO_E_NOT_SUPPORTED;
     }
 
-    isPCM_ = inFormat.guidFormatType == KSDATAFORMAT_SUBTYPE_PCM;
-    auto sampleRate = (int)inFormat.fFramesPerSecond;
+    lockedIsPCM_ = inFormat.guidFormatType == KSDATAFORMAT_SUBTYPE_PCM;
+    lockedSampleRate_ = (int)inFormat.fFramesPerSecond;
 
-    dnse_ = std::make_unique<DNSE_CH>(10, 9, sampleRate);
+    createDnse();
 
     return hr;
 }
@@ -315,7 +328,15 @@ STDMETHODIMP Q2APOMFX::LockForProcess(UINT32 u32NumInputConnections, APO_CONNECT
 STDMETHODIMP Q2APOMFX::UnlockForProcess()
 {
     msg() << "UnlockForProcess";
-    dnse_.reset();
+    
+    errorOnce_ = false;
+    lockedSampleRate_ = 0;
+
+    {
+        std::lock_guard lk(dnseMtx_);
+        dnse_.reset();
+    }
+
     return CBaseAudioProcessingObject::UnlockForProcess();
 }
 
@@ -398,35 +419,43 @@ Exit:
 STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONNECTION_PROPERTY ** ppInputConnections,
                                          UINT32 u32NumOutputConnections, APO_CONNECTION_PROPERTY ** ppOutputConnections)
 {
-    if (!dnse_)
-    {
-        return;
-    }
-
     if (u32NumInputConnections > 1 || u32NumOutputConnections > 1)
     {
-        err() << "Extra connections are not supported: " << u32NumInputConnections << ' ' << u32NumOutputConnections;
+        if (!errorOnce_)
+        {
+            err() << "Extra connections are not supported: " << u32NumInputConnections << ' ' << u32NumOutputConnections;
+            errorOnce_ = true;
+        }
     }
 
     auto & iConn = ppInputConnections[0];
     auto & oConn = ppOutputConnections[0];
 
+    std::lock_guard lk(dnseMtx_);
+
     switch (iConn->u32BufferFlags)
     {
         case BUFFER_VALID:
         {
-            if (isPCM_)
+            if (lockedIsPCM_)
             {
                 // not tested
                 auto inputFrames = reinterpret_cast<int16_t *>(iConn->pBuffer);
                 auto outputFrames = reinterpret_cast<int16_t *>(oConn->pBuffer);
 
-                for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
+                if (dnse_)
                 {
-                    auto l = inputFrames[2 * i];
-                    auto r = inputFrames[2 * i + 1];
+                    for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
+                    {
+                        auto l = inputFrames[2 * i];
+                        auto r = inputFrames[2 * i + 1];
 
-                    dnse_->filter(l, r, outputFrames + 2 * i, outputFrames + 2 * i + 1);
+                        dnse_->filter(l, r, outputFrames + 2 * i, outputFrames + 2 * i + 1);
+                    }
+                }
+                else
+                {
+                    std::copy(inputFrames, inputFrames + iConn->u32ValidFrameCount * 2, outputFrames);
                 }
             }
             else
@@ -434,16 +463,23 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                 auto inputFrames = reinterpret_cast<float *>(iConn->pBuffer);
                 auto outputFrames = reinterpret_cast<float *>(oConn->pBuffer);
 
-                for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
+                if (dnse_)
                 {
-                    auto l = int(inputFrames[2 * i] * 0x7FFF);
-                    auto r = int(inputFrames[2 * i + 1] * 0x7FFF);
+                    for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
+                    {
+                        auto l = int(inputFrames[2 * i] * 0x7FFF);
+                        auto r = int(inputFrames[2 * i + 1] * 0x7FFF);
 
-                    int16_t ol, or;
-                    dnse_->filter(l, r, &ol, &or);
+                        int16_t ol, or;
+                        dnse_->filter(l, r, &ol, &or);
 
-                    outputFrames[2 * i] = float(ol) / 0x7FFF;
-                    outputFrames[2 * i + 1] = float(or) / 0x7FFF;
+                        outputFrames[2 * i] = float(ol) / 0x7FFF;
+                        outputFrames[2 * i + 1] = float(or) / 0x7FFF;
+                    }
+                }
+                else
+                {
+                    std::copy(inputFrames, inputFrames + iConn->u32ValidFrameCount * 2, outputFrames);
                 }
             }
 
@@ -474,7 +510,7 @@ STDMETHODIMP Q2APOMFX::GetFormatCount(UINT * pcFormats)
 
     if (pcFormats == NULL) return E_POINTER;
 
-    *pcFormats = UINT(std::size(_availableFormatsPcm) + std::size(_availableFormatsFloat));
+    *pcFormats = UINT(std::size(availableFormatsPcm_) + std::size(availableFormatsFloat_));
     return S_OK;
 }
 
@@ -484,12 +520,12 @@ STDMETHODIMP Q2APOMFX::GetFormat(UINT nFormat, IAudioMediaType ** ppFormat)
     msg() << "GetFormat " << nFormat;
 
     if (ppFormat == nullptr) return E_POINTER;
-    if (nFormat >= std::size(_availableFormatsPcm) + std::size(_availableFormatsFloat)) return E_INVALIDARG;
+    if (nFormat >= std::size(availableFormatsPcm_) + std::size(availableFormatsFloat_)) return E_INVALIDARG;
 
     *ppFormat = NULL;
 
     auto hr = CreateAudioMediaTypeFromUncompressedAudioFormat(
-        nFormat < std::size(_availableFormatsPcm) ? &_availableFormatsPcm[nFormat].format : &_availableFormatsFloat[nFormat].format,
+        nFormat < std::size(availableFormatsPcm_) ? &availableFormatsPcm_[nFormat].format : &availableFormatsFloat_[nFormat].format,
         ppFormat);
     return hr;
 }
@@ -500,9 +536,9 @@ STDMETHODIMP Q2APOMFX::GetFormatRepresentation(UINT nFormat, LPWSTR * ppwstrForm
     msg() << "GetFormatRepresentation " << nFormat;
 
     if (ppwstrFormatRep == nullptr) return E_POINTER;
-    if (nFormat >= std::size(_availableFormatsPcm) + std::size(_availableFormatsFloat)) return E_INVALIDARG;
+    if (nFormat >= std::size(availableFormatsPcm_) + std::size(availableFormatsFloat_)) return E_INVALIDARG;
 
-    auto & fmt = nFormat < std::size(_availableFormatsPcm) ? _availableFormatsPcm[nFormat] : _availableFormatsFloat[nFormat];
+    auto & fmt = nFormat < std::size(availableFormatsPcm_) ? availableFormatsPcm_[nFormat] : availableFormatsFloat_[nFormat];
 
     auto nameLen = (wcslen(fmt.name) + 1) * sizeof(WCHAR);
     auto nameStr = (LPWSTR)CoTaskMemAlloc(nameLen);
@@ -513,13 +549,58 @@ STDMETHODIMP Q2APOMFX::GetFormatRepresentation(UINT nFormat, LPWSTR * ppwstrForm
     return S_OK;
 }
 
+
+void Q2APOMFX::parseSettings(const std::wstring & settings)
+{
+    msg() << "Setup: " << settings;
+
+    auto params = stringSplit(settings, L",");
+
+    if (settings == Settings::disabled()
+        || params.empty())
+    {
+        chRoomSize_ = 0;
+        chGain_ = 0;
+        return;
+    }
+
+    if (params[0] == L"ch")
+    {
+        chRoomSize_ = params.size() > 1 ? std::stoi(params[1]) : 0;
+        chGain_ = params.size() > 2 ? std::stoi(params[2]) : 0;
+    }
+    else
+    {
+        err() << "unsupported filter setting " << settings;
+        chRoomSize_ = 0;
+        chGain_ = 0;
+    }
+}
+
+void Q2APOMFX::createDnse()
+{
+    std::lock_guard lk(dnseSettingMtx_);
+
+    std::unique_ptr<DNSE_CH> newFilter;
+    if (chRoomSize_ != 0 && chGain_ != 0
+        && lockedSampleRate_ != 0)
+    {
+        newFilter = std::make_unique<DNSE_CH>(chRoomSize_, chGain_, lockedSampleRate_);
+    }
+
+    {
+        std::lock_guard lk(dnseMtx_);
+        dnse_.swap(newFilter);
+    }
+}
+
 //
 
 bool Q2APOMFX::checkFormat(const UNCOMPRESSEDAUDIOFORMAT & format)
 {
     if (format.guidFormatType == KSDATAFORMAT_SUBTYPE_PCM)
     {
-        for (auto & fmt : _availableFormatsPcm)
+        for (auto & fmt : availableFormatsPcm_)
         {
             if (isEqual(fmt.format, format))
             {
@@ -529,7 +610,7 @@ bool Q2APOMFX::checkFormat(const UNCOMPRESSEDAUDIOFORMAT & format)
     }
     else if (format.guidFormatType == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
     {
-        for (auto & fmt : _availableFormatsFloat)
+        for (auto & fmt : availableFormatsFloat_)
         {
             if (isEqual(fmt.format, format))
             {
@@ -538,7 +619,67 @@ bool Q2APOMFX::checkFormat(const UNCOMPRESSEDAUDIOFORMAT & format)
         }
     }
 
-
     return false;
+}
+
+void Q2APOMFX::settingsMonitor()
+{
+    try
+    {
+        Handle hEvent(CreateEventW(NULL, FALSE, FALSE, NULL));
+        auto hKey = Registry::openKey(Settings::appPath, KEY_NOTIFY | KEY_QUERY_VALUE | KEY_WOW64_64KEY);
+        HANDLE waitObjs[] = { hEvent, stopSettingMonitorEvent_ };
+
+        auto settingCache_ = Settings::current();
+
+        while (true)
+        {
+            auto s = RegNotifyChangeKeyValue(hKey, FALSE, REG_NOTIFY_CHANGE_LAST_SET, hEvent, TRUE);
+            if (s != ERROR_SUCCESS) throw ::Error("RegNotifyChangeKeyValue failed", s);
+
+            auto wr = WaitForMultipleObjects((int)std::size(waitObjs), waitObjs, FALSE, INFINITE);
+            switch (wr)
+            {
+                case WAIT_OBJECT_0:
+                {
+                    auto newSetting = Settings::current();
+                    if (newSetting == settingCache_)
+                    {
+                        break;
+                    }
+
+                    settingCache_ = newSetting;
+
+                    {
+                        std::lock_guard lk(dnseSettingMtx_);
+                        parseSettings(newSetting);
+                        createDnse();
+                    }
+
+                    break;
+                }
+
+                case WAIT_OBJECT_0 + 1:
+                    msg() << "setings monitor stopped";
+                    return;
+
+                default:
+                    err() << "Unexpected wait result " << wr;
+                    return;
+            }
+        }
+    }
+    catch (const ::Error & e)
+    {
+        err() << e.what();
+    }
+    catch (const WError & e)
+    {
+        err() << e.what();
+    }
+    catch (const std::exception & e)
+    {
+        err() << "Exception : " << e.what();
+    }
 }
 
