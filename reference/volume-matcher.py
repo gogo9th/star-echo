@@ -222,18 +222,18 @@ def file_to_wavs(filepath, isFilter=False):
         sound = AudioSegment.from_wav(filepath)
         _arr = np.array(sound.get_array_of_samples(), dtype=dtype)
     elif ext == 'mp3':
-	    # Add a 2-sec silence
         sound = AudioSegment.from_mp3(filepath)
-    if ext == "flac":
-	    # Add a 2-sec silence
+    elif ext == "flac":
         sound = AudioSegment.from_file(filepath, "flac")
+    else:
+        sound = AudioSegment.from_file(outpath)
 
     _arr = np.array(sound.get_array_of_samples(), dtype=dtype)
     nparr = np.zeros((int(len(_arr) / 2), 2), dtype=dtype)
     nparr[:, 0] = _arr[0::2]
     nparr[:, 1] = _arr[1::2]
     print("Old dBFS 3: " + str(sound.dBFS))
-    return sound.frame_rate, nparr, sound.dBFS
+    return sound.frame_rate, nparr, sound
 
 
 def wavs_to_file(filepath, fs, data):
@@ -267,8 +267,8 @@ if __name__ == "__main__":
     outpath = sys.argv[2]
     gained_outpath = outpath + " - GAINED.flac"
 
-    fs_src, wav_src, dBFS_src = file_to_wavs(sys.argv[1])
-    fs_dst, wav_dst, dBFS_dst = file_to_wavs(sys.argv[2])
+    fs_src, wav_src, sound_src = file_to_wavs(sys.argv[1])
+    fs_dst, wav_dst, sound_dst = file_to_wavs(sys.argv[2])
 
     # type casting and max calibration
     #dtype_dict = {'float32': 1.0, 'int32': 2147483648, 'int16': 32768, 'uint8': 128}
@@ -280,18 +280,9 @@ if __name__ == "__main__":
 
     _fname, ext = os.path.splitext(outpath)
     ext = ext[1:]
-    
-    if ext == "wav":
-        audio_file = AudioSegment.from_wav(outpath)
-
-    elif ext == "flac":
-        audio_file = AudioSegment.from_file(outpath, "flac")
-
-    else:
-        audio_file = AudioSegment.from_mp3(outpath)
-
-    print("dBFS: " + str(dBFS_dst) + " -> " + str(dBFS_src))
-    audio_file = audio_file.apply_gain(dBFS_src - dBFS_dst)
+    	
+    print("dBFS: " + str(sound_dst.dBFS) + " -> " + str(sound_src.dBFS))
+    audio_file = sound_dst.apply_gain(sound_src.dBFS - sound_dst.dBFS)
 
     audio_file.export(gained_outpath, format="flac")
 
