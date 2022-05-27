@@ -82,6 +82,17 @@ private:
     std::wostringstream os_;
 };
 
+class NoLog
+{
+public:
+    template<typename T>
+    const NoLog & operator <<(const T & v) const
+    {
+        return *this;
+    }
+};
+
+
 inline Log err()
 {
     return Log((L"{" + std::to_wstring(GetCurrentThreadId()) + L"} [Q2APO] Error: ").c_str());
@@ -91,6 +102,19 @@ inline Log msg()
 {
     return Log((L'{' + std::to_wstring(GetCurrentThreadId()) + L"} [Q2APO] ").c_str());
 }
+
+#if defined(_DEBUG)
+inline Log dbg()
+{
+    return Log((L'{' + std::to_wstring(GetCurrentThreadId()) + L"} [Q2APO] ").c_str());
+}
+#else
+inline NoLog dbg()
+{
+    return NoLog();
+}
+#endif
+
 
 //
 

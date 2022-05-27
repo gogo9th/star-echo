@@ -131,14 +131,14 @@ Q2APOMFX::Q2APOMFX()
     , settingMonitorThread_(&Q2APOMFX::settingsMonitor, this)
     , stopSettingMonitorEvent_(CreateEventW(NULL, TRUE, FALSE, NULL))
 {
-    msg() << "Creating";
+    dbg() << "Creating";
 
     parseSettings(Settings::current());
 }
 
 Q2APOMFX::~Q2APOMFX()
 {
-    msg() << "Deleting";
+    dbg() << "Deleting";
 
     SetEvent(stopSettingMonitorEvent_);
     if (settingMonitorThread_.joinable())
@@ -170,7 +170,7 @@ STDMETHODIMP Q2APOMFX::Initialize(UINT32 cbDataSize, BYTE * pbyData)
 
     if (cbDataSize == sizeof(APOInitSystemEffects))
     {
-        msg() << "Init APOInitSystemEffects L " << m_bIsLocked;
+        dbg() << "Init APOInitSystemEffects L " << m_bIsLocked;
 
         APOInitSystemEffects * eff = (APOInitSystemEffects *)pbyData;
     }
@@ -178,11 +178,11 @@ STDMETHODIMP Q2APOMFX::Initialize(UINT32 cbDataSize, BYTE * pbyData)
     {
         auto eff = (APOInitSystemEffects2 *)pbyData;
         // AUDIO_SIGNALPROCESSINGMODE_DEFAULT
-        msg() << "Init APOInitSystemEffects 2" << " mode " << eff->AudioProcessingMode << " L " << m_bIsLocked;
+        dbg() << "Init APOInitSystemEffects 2" << " mode " << eff->AudioProcessingMode << " L " << m_bIsLocked;
     }
     else if (cbDataSize == sizeof(APOInitSystemEffects3))
     {
-        msg() << "APOInitSystemEffects 3 L " << m_bIsLocked;
+        dbg() << "APOInitSystemEffects 3 L " << m_bIsLocked;
     }
     else
     {
@@ -208,7 +208,7 @@ STDMETHODIMP Q2APOMFX::IsInputFormatSupported(IAudioMediaType * pOutputFormat,
     msg() << "IIFS Req " << ucReq;
     if (checkFormat(ucReq))
     {
-        msg() << " supported";
+        dbg() << " supported";
         *ppSupportedInputFormat = pRequestedInputFormat;
         (*ppSupportedInputFormat)->AddRef();
         return S_OK;
@@ -238,16 +238,22 @@ STDMETHODIMP Q2APOMFX::IsInputFormatSupported(IAudioMediaType * pOutputFormat,
         }
         else
         {
-            err() << "unsupported format " << ucReq.guidFormatType;
+            err() << "Unsupported format " << ucReq.guidFormatType;
             return APOERR_FORMAT_NOT_SUPPORTED;
         }
 
         //auto hr = CreateAudioMediaType(proposed, sizeof(*proposed), ppSupportedInputFormat);
         auto hr = CreateAudioMediaTypeFromUncompressedAudioFormat(proposed, ppSupportedInputFormat);
-        msg() << " proposing " << hr;
-        msg() << "IIFS Out " << *ppSupportedInputFormat;
+        if (SUCCEEDED(hr))
+        {
+            msg() << "IIFS Out proposing " << *ppSupportedInputFormat;
+        }
+        else
+        {
+            err() << "Failed to create audio format " << *proposed;
+        }
 
-        return SUCCEEDED(hr) ? S_FALSE : hr;
+        return SUCCEEDED(hr) ? S_FALSE : APOERR_FORMAT_NOT_SUPPORTED;
     }
 }
 
@@ -258,7 +264,7 @@ STDMETHODIMP_(HRESULT __stdcall) Q2APOMFX::IsOutputFormatSupported(IAudioMediaTy
 {
     if (!pRequestedOutputFormat || !ppSupportedOutputFormat) return E_POINTER;
 
-    msg() << "IOFS Req " << pRequestedOutputFormat;
+    dbg() << "IOFS Req " << pRequestedOutputFormat;
 
     return IsFormatTypeSupported(pInputFormat, pRequestedOutputFormat, ppSupportedOutputFormat, false);
 }
@@ -268,7 +274,7 @@ STDMETHODIMP_(HRESULT __stdcall) Q2APOMFX::GetInputChannelCount(UINT32 * pu32Cha
 {
     if (!pu32ChannelCount) return E_POINTER;
 
-    msg() << "GetInputChannelCount";
+    dbg() << "GetInputChannelCount";
 
     *pu32ChannelCount = 2;
 
@@ -278,7 +284,7 @@ STDMETHODIMP_(HRESULT __stdcall) Q2APOMFX::GetInputChannelCount(UINT32 * pu32Cha
 STDMETHODIMP Q2APOMFX::LockForProcess(UINT32 u32NumInputConnections, APO_CONNECTION_DESCRIPTOR ** ppInputConnections,
                                       UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR ** ppOutputConnections)
 {
-    msg() << "LockForProcess:  input " << u32NumInputConnections
+    dbg() << "LockForProcess:  input " << u32NumInputConnections
         << " output " << u32NumOutputConnections;
 
     if (u32NumInputConnections == 0 || !ppInputConnections
@@ -305,8 +311,8 @@ STDMETHODIMP Q2APOMFX::LockForProcess(UINT32 u32NumInputConnections, APO_CONNECT
     hr = ppOutputConnections[0]->pFormat->GetUncompressedAudioFormat(&outFormat);
     if (FAILED(hr)) return hr;
 
-    msg() << "LockForProcess: <= " << inFormat;
-    msg() << "LockForProcess: => " << outFormat;
+    dbg() << "LockForProcess: <= " << inFormat;
+    dbg() << "LockForProcess: => " << outFormat;
 
     if (!isEqual(inFormat, outFormat))
     {
@@ -321,13 +327,13 @@ STDMETHODIMP Q2APOMFX::LockForProcess(UINT32 u32NumInputConnections, APO_CONNECT
 
     createDnse();
 
-    return hr;
+    return S_OK;
 }
 
 
 STDMETHODIMP Q2APOMFX::UnlockForProcess()
 {
-    msg() << "UnlockForProcess";
+    dbg() << "UnlockForProcess";
     
     errorOnce_ = false;
     lockedSampleRate_ = 0;
@@ -352,7 +358,7 @@ STDMETHODIMP Q2APOMFX::GetEffectsList(_Outptr_result_buffer_maybenull_(*pcEffect
     BOOL effectsLocked = FALSE;
     UINT cEffects = 0;
 
-    msg() << "GetEffectsList";
+    dbg() << "GetEffectsList";
 
     {
         struct EffectControl
@@ -506,7 +512,7 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
 
 STDMETHODIMP Q2APOMFX::GetFormatCount(UINT * pcFormats)
 {
-    msg() << "GetFormatCount";
+    dbg() << "GetFormatCount";
 
     if (pcFormats == NULL) return E_POINTER;
 
@@ -517,7 +523,7 @@ STDMETHODIMP Q2APOMFX::GetFormatCount(UINT * pcFormats)
 
 STDMETHODIMP Q2APOMFX::GetFormat(UINT nFormat, IAudioMediaType ** ppFormat)
 {
-    msg() << "GetFormat " << nFormat;
+    dbg() << "GetFormat " << nFormat;
 
     if (ppFormat == nullptr) return E_POINTER;
     if (nFormat >= std::size(availableFormatsPcm_) + std::size(availableFormatsFloat_)) return E_INVALIDARG;
@@ -533,7 +539,7 @@ STDMETHODIMP Q2APOMFX::GetFormat(UINT nFormat, IAudioMediaType ** ppFormat)
 
 STDMETHODIMP Q2APOMFX::GetFormatRepresentation(UINT nFormat, LPWSTR * ppwstrFormatRep)
 {
-    msg() << "GetFormatRepresentation " << nFormat;
+    dbg() << "GetFormatRepresentation " << nFormat;
 
     if (ppwstrFormatRep == nullptr) return E_POINTER;
     if (nFormat >= std::size(availableFormatsPcm_) + std::size(availableFormatsFloat_)) return E_INVALIDARG;
@@ -571,7 +577,7 @@ void Q2APOMFX::parseSettings(const std::wstring & settings)
     }
     else
     {
-        err() << "unsupported filter setting " << settings;
+        err() << "Unsupported filter setting " << settings;
         chRoomSize_ = 0;
         chGain_ = 0;
     }
@@ -660,7 +666,7 @@ void Q2APOMFX::settingsMonitor()
                 }
 
                 case WAIT_OBJECT_0 + 1:
-                    msg() << "setings monitor stopped";
+                    dbg() << "Settings monitor stopped";
                     return;
 
                 default:
