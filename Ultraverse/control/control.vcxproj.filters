@@ -36,6 +36,12 @@
     <ClInclude Include="icon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mmDevices.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mmDeviceInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="control.cpp">
@@ -48,6 +54,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="icon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mmDevices.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mmDeviceInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

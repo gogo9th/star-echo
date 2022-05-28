@@ -50,3 +50,6 @@ inline std::vector<std::basic_string<char_type>> stringSplit(const std::basic_st
 }
 
 void toUpperCase(std::wstring & s);
+
+std::wstring toString(const GUID & guid);
+std::wstring toString(const PROPERTYKEY & pkey);

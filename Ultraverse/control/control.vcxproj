@@ -135,18 +135,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="mmDeviceInfo.h" />
     <ClInclude Include="control.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="icon.h" />
     <ClInclude Include="MainWindow.h" />
+    <ClInclude Include="mmDevices.h" />
     <ClInclude Include="NotifyIcon.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="mmDeviceInfo.cpp" />
     <ClCompile Include="control.cpp" />
     <ClCompile Include="icon.cpp" />
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="mmDevices.cpp" />
     <ClCompile Include="NotifyIcon.cpp" />
   </ItemGroup>
   <ItemGroup>

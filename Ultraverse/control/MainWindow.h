@@ -2,6 +2,7 @@
 
 #include "framework.h"
 #include "icon.h"
+#include "mmDeviceInfo.h"
 
 class MainWindow
 {
@@ -28,8 +29,16 @@ private:
     friend INT_PTR WINAPI dlgProc_(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     INT_PTR dlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+    void onButtonClicked(int id);
+
+    void updateDeviceInfos();
+    void updateDeviceInfoList();
+
     Icon    icon_;
     HWND    hWnd_ = 0;
     DLGPROC dlgProc_;
+
+    HWND    deviceList_;
+    std::vector<std::shared_ptr<MMDeviceInfo>>   deviceInfos_;
 };
 

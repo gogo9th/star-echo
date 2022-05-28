@@ -48,6 +48,16 @@ HKey openKey(std::wstring_view key, REGSAM samDesired)
     return hkey;
 }
 
+HKey openKey(const HKey & hkey, std::wstring_view subKey, REGSAM samDesired)
+{
+    HKey hSubKey;
+    auto status = RegOpenKeyExW(hkey, subKey.data(), 0, samDesired, &hSubKey);
+    if (status != ERROR_SUCCESS)
+        throw WError(L"Failed to open registry subkey " + subKey + L": " + status);
+
+    return hSubKey;
+}
+
 void createKey(std::wstring_view key)
 {
     auto [rootKey, subKey] = splitKey(key);
@@ -56,6 +66,28 @@ void createKey(std::wstring_view key)
     auto status = RegCreateKeyExW(rootKey, subKey.data(), 0, NULL, 0, KEY_SET_VALUE | KEY_WOW64_64KEY, NULL, &hkey, NULL);
     if (status != ERROR_SUCCESS)
         throw WError(L"Failed to create registry key " + key + L": " + status);
+}
+
+std::vector<std::wstring> Registry::subKeys(std::wstring_view key)
+{
+    std::vector<std::wstring> r;
+
+    auto hkey = openKey(key, KEY_ENUMERATE_SUB_KEYS | KEY_WOW64_64KEY);
+
+    int i = 0;
+    LSTATUS status;
+    wchar_t subkey[256];
+    DWORD keyLength = (DWORD)std::size(subkey);
+    while ((status = RegEnumKeyExW(hkey, i++, subkey, &keyLength, NULL, NULL, NULL, NULL)) == ERROR_SUCCESS)
+    {
+        r.push_back(subkey);
+        keyLength = (DWORD)std::size(subkey);
+    }
+
+    if (status != ERROR_NO_MORE_ITEMS)
+        throw WError(L"Failed to enumerate subkeys of registry key " + key + L": " + status);
+
+    return r;
 }
 
 void setKeyWritable(std::wstring_view key)
@@ -117,6 +149,14 @@ bool keyExists(std::wstring_view key)
 
     HKey keyHandle;
     auto result = RegOpenKeyExW(rootKey, subKey.data(), 0, KEY_QUERY_VALUE | KEY_WOW64_64KEY, &keyHandle);
+
+    return result == ERROR_SUCCESS;
+}
+
+bool keyExists(const HKey & hkey, std::wstring_view subKey)
+{
+    HKey keyHandle;
+    auto result = RegOpenKeyExW(hkey, subKey.data(), 0, KEY_QUERY_VALUE | KEY_WOW64_64KEY, &keyHandle);
 
     return result == ERROR_SUCCESS;
 }
@@ -211,7 +251,7 @@ void getValue(const HKey & hkey, std::wstring_view name, unsigned long & value)
         throw WError(L"Registry value " + name + L" has unexpected size " + bufSize);
 
     std::unique_ptr<byte[]> buf(new byte[bufSize]);
-    status = RegQueryValueExW(hkey, name.data(), NULL, &type, NULL, &bufSize);
+    status = RegQueryValueExW(hkey, name.data(), NULL, NULL, buf.get(), &bufSize);
     if (status != ERROR_SUCCESS)
         throw WError(L"Failed to read registry value " + name + L": " + status);
 
