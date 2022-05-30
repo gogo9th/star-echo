@@ -10,7 +10,8 @@
 //
 
 static std::map<HWND, NotifyIcon *> miniWindows_;
-static INT_PTR WINAPI miniWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+
+static LRESULT WINAPI miniWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     auto iw = miniWindows_.find(hWnd);
     return iw != miniWindows_.end() ? iw->second->WndProc(uMsg, wParam, lParam) : DefWindowProcW(hWnd, uMsg, wParam, lParam);

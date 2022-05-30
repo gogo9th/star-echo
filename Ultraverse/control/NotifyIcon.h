@@ -23,7 +23,7 @@ private:
 
     static ATOM registerClass();
 
-    friend INT_PTR WINAPI miniWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    friend LRESULT WINAPI miniWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     LRESULT WndProc(UINT message, WPARAM wParam, LPARAM lParam);
 
     void setIcon(Icon & icon, bool isNew = false);

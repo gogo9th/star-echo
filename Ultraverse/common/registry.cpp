@@ -188,14 +188,14 @@ void setValue(const HKey & key, std::wstring_view name, std::wstring_view value)
 {
     auto status = RegSetValueExW(key, name.data(), 0, REG_SZ, (const BYTE *)value.data(), (DWORD)((value.size() + 1) * sizeof(wchar_t)));
     if (status != ERROR_SUCCESS)
-        throw WError(L"Failed to write to registry value " + name + L": " + std::to_wstring(status));
+        throw WError(L"Failed to write to registry value " + name + L": " + status);
 }
 
 void setValue(const HKey & key, std::wstring_view name, unsigned long value)
 {
     auto status = RegSetValueExW(key, name.data(), 0, REG_DWORD, (const BYTE *)&value, sizeof(unsigned long));
     if (status != ERROR_SUCCESS)
-        throw WError(L"Failed to write to registry value " + name + L": " + std::to_wstring(status));
+        throw WError(L"Failed to write to registry value " + name + L": " + status);
 }
 
 
