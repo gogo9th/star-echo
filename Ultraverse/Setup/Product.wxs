@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include $(sys.CURRENTDIR)\vars.wxi?>
+  
+  <Product Id="*"
+           Name="Ultraverse" 
+           Language="1033" 
+           Version="1.0.0.0" 
+           Manufacturer="gogo9th"
+           UpgradeCode="c0a4396d-6b68-4e60-9031-98337cd5bca6">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <MediaTemplate EmbedCab="yes"/>
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <Feature Id="Application" Title="Ultraverse" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id='ProgramMenuShortcuts' />
+    </Feature>
+  </Product>
+
+  <Fragment>
+
+    <Component Id="ProgramMenuShortcuts" Guid="EF543DDA-B9FA-41B1-8E2C-8C9C8AE60845" Directory="ProgramMenuDir">
+      <!--<Shortcut Id="desktopShortcut" Name="Ultraverse Control" Icon='icon.ico' Directory="DesktopFolder"
+                Target='[#controlApp]'
+                WorkingDirectory='APPLICATIONFOLDER' Advertise='no'/>
+      -->
+      <Shortcut Id="startmenuShortcut" Name="Ultraverse Control"
+                Target='[#controlApp]'
+                WorkingDirectory='APPLICATIONFOLDER'/>
+      
+      <Shortcut Id="UninstallProduct" Name="Uninstall Ultraverse" Target="[System64Folder]msiexec.exe" Arguments="/x [ProductCode]"
+                Description="Uninstalls Ultraverse"/>
+      <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+      <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+    </Component>
+    
+    
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      
+      <Directory Id="PlatformProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Ultraverse" />
+      </Directory>
+
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ProgramMenuDir" Name="Ultraverse">
+        </Directory>
+      </Directory>
+    </Directory>
+
+    
+    
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="Application" Guid="{EBD79ADB-D399-4D5E-8288-B12D994882A4}">
+        <File Id="controlApp" Source="$(var.control.TargetPath)"/>
+      </Component>
+    </ComponentGroup>
+  
+  </Fragment>
+</Wix>
