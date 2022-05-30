@@ -31,14 +31,18 @@ private:
 
     void onButtonClicked(int id);
 
+    void updateDeviceFromUi(int index);
     void updateDeviceInfos();
-    void updateDeviceInfoList();
+    void updateDeviceInfoStatus();
 
     Icon    icon_;
     HWND    hWnd_ = 0;
     DLGPROC dlgProc_;
 
     HWND    deviceList_;
-    std::vector<std::shared_ptr<MMDeviceInfo>>   deviceInfos_;
+    HWND    btnApply_;
+
+    std::wstring                                defaultDevilceGuid_;
+    std::vector<std::shared_ptr<MMDeviceInfo>>  deviceInfos_;
 };
 

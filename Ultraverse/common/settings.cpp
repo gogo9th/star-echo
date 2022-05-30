@@ -26,10 +26,10 @@ void setupAppKey()
     if (!Registry::keyExists(appPath))
     {
         Registry::createKey(appPath);
-        Registry::setKeyWritable(appPath);
     }
+    Registry::setKeyWritable(appPath);
 
-    auto hKey = Registry::openKey(appPath, KEY_SET_VALUE | KEY_WOW64_64KEY);
+    auto hKey = Registry::openKey(appPath, KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_WOW64_64KEY);
     if (!Registry::valueExists(hKey, settingsName))
     {
         Registry::setValue(hKey, settingsName, L"");

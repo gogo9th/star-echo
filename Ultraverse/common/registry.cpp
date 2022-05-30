@@ -157,19 +157,19 @@ bool keyExists(const HKey & hkey, std::wstring_view subKey)
 {
     HKey keyHandle;
     auto result = RegOpenKeyExW(hkey, subKey.data(), 0, KEY_QUERY_VALUE | KEY_WOW64_64KEY, &keyHandle);
-
     return result == ERROR_SUCCESS;
 }
 
-bool valueExists(std::wstring_view key, std::wstring_view valuename)
+bool valueExists(std::wstring_view key, std::wstring_view value)
 {
     auto hkey = openKey(key, KEY_QUERY_VALUE | KEY_WOW64_64KEY);
-    return valueExists(hkey, valuename);
+    return valueExists(hkey, value);
 }
 
-bool valueExists(const HKey & hkey, std::wstring_view valuename)
+bool valueExists(const HKey & hkey, std::wstring_view value)
 {
-    return RegQueryValueExW(hkey, valuename.data(), NULL, NULL, NULL, NULL) == ERROR_SUCCESS;
+    auto result = RegQueryValueExW(hkey, value.data(), NULL, NULL, NULL, NULL);
+    return result == ERROR_SUCCESS;
 }
 
 void setValue(std::wstring_view key, std::wstring_view name, std::wstring_view value)
@@ -193,7 +193,7 @@ void setValue(const HKey & key, std::wstring_view name, std::wstring_view value)
 
 void setValue(const HKey & key, std::wstring_view name, unsigned long value)
 {
-    auto status = RegSetValueExW(key, name.data(), 0, REG_SZ, (const BYTE *)&value, sizeof(unsigned long));
+    auto status = RegSetValueExW(key, name.data(), 0, REG_DWORD, (const BYTE *)&value, sizeof(unsigned long));
     if (status != ERROR_SUCCESS)
         throw WError(L"Failed to write to registry value " + name + L": " + std::to_wstring(status));
 }
@@ -256,6 +256,19 @@ void getValue(const HKey & hkey, std::wstring_view name, unsigned long & value)
         throw WError(L"Failed to read registry value " + name + L": " + status);
 
     value = *(unsigned long *)buf.get();
+}
+
+void deleteValue(std::wstring key, std::wstring value)
+{
+    auto hkey = openKey(key, KEY_QUERY_VALUE | KEY_WOW64_64KEY);
+    deleteValue(hkey, value);
+}
+
+void deleteValue(const HKey & hkey, std::wstring value)
+{
+    auto status = RegDeleteValueW(hkey, value.data());
+    if (status != ERROR_SUCCESS)
+        throw WError(L"Failed to delete registry value " + value + L": " + status);
 }
 
 

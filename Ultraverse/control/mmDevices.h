@@ -4,11 +4,35 @@
 
 #include <mmdeviceapi.h>
 
-DEFINE_PROPERTYKEY(PKEY_Endpoint_Name,          0xb3f8fa53, 0x0004, 0x438e, 0x90, 0x03, 0x51, 0xa4, 0x6e, 0x13, 0x9b, 0xfc, 6);
+DEFINE_PROPERTYKEY(PKEY_Endpoint_Name,  0xb3f8fa53, 0x0004, 0x438e, 0x90, 0x03, 0x51, 0xa4, 0x6e, 0x13, 0x9b, 0xfc, 6);
 
+//PKEY_SYSFX_Association                  = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},0"
+//PKEY_SYSFX_PreMixClsid                  = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},1"
+//PKEY_SYSFX_PostMixClsid                 = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},2"
+//PKEY_SYSFX_UiClsid                      = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},3"
+//PKEY_SYSFX_SFXClsid                     = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},5"
+//PKEY_SYSFX_MFXClsid                     = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},6"
+//PKEY_SYSFX_EFXClsid                     = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},7"
+//PKEY_SYSFX_KeywordDetector_SFX          = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},8"
+//PKEY_SYSFX_KeywordDetector_MFX          = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},9"
+//PKEY_SYSFX_KeywordDetector_EFX          = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},10"
+//PKEY_SYSFX_Offload_SFX                  = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},11"
+//PKEY_SYSFX_Offload_MFX                  = "{D04E05A6-594B-4FB6-A80D-01AF5EED7D1D},12"
+//PKEY_SYSCompositeFX_SFX                 = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},13"
+//PKEY_SYSCompositeFX_MFX                 = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},14"
+//PKEY_SYSCompositeFX_EFX                 = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},15"
+//PKEY_SYSCompositeFX_KeywordDetector_SFX = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},16"
+//PKEY_SYSCompositeFX_KeywordDetector_MFX = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},17"
+//PKEY_SYSCompositeFX_KeywordDetector_EFX = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},18"
+//PKEY_SYSCompositeFX_Offload_SFX         = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},19"
+//PKEY_SYSCompositeFX_Offload_MFX         = "{D04E05A6-594B-4fb6-A80D-01AF5EED7D1D},20"
 DEFINE_PROPERTYKEY(PKEY_FX_StreamEffectClsid,   0xD04E05A6, 0x594B, 0x4fb6, 0xA8, 0x0D, 0x01, 0xAF, 0x5E, 0xED, 0x7D, 0x1D, 5);
 DEFINE_PROPERTYKEY(PKEY_FX_ModeEffectClsid,     0xD04E05A6, 0x594B, 0x4fb6, 0xA8, 0x0D, 0x01, 0xAF, 0x5E, 0xED, 0x7D, 0x1D, 6);
 DEFINE_PROPERTYKEY(PKEY_FX_EndpointEffectClsid, 0xD04E05A6, 0x594B, 0x4fb6, 0xA8, 0x0D, 0x01, 0xAF, 0x5E, 0xED, 0x7D, 0x1D, 7);
+
+// {F2274AD2-4E30-4D27-9089-72B42DEFF86E}
+DEFINE_PROPERTYKEY(PKEY_Q2FX_PreviousEffectClsid,   0xf2274ad2, 0x4e30, 0x4d27, 0x90, 0x89, 0x72, 0xb4, 0x2d, 0xef, 0xf8, 0x6e, 0);
+
 
 std::wstring getDefaultMMDevice(EDataFlow);
 

@@ -1,9 +1,12 @@
 
 #include "framework.h"
 
+#include <Shellapi.h>
+
 #include "control.h"
 #include "MainWindow.h"
 #include "NotifyIcon.h"
+#include "winservice.h"
 
 #include "common/scopedResource.h"
 #include "common/registry.h"
@@ -53,9 +56,6 @@ static INT_PTR WINAPI dlgProc_(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     return mw_->dlgProc(hWnd, uMsg, wParam, lParam);
 }
 
-static bool isUserInAdminGroup();
-
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                       _In_opt_ HINSTANCE hPrevInstance,
                       _In_ LPWSTR    lpCmdLine,
@@ -73,18 +73,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     InitCtrls.dwICC = ICC_WIN95_CLASSES;
     InitCommonControlsEx(&InitCtrls);
 
+    auto wPrev = FindWindowW(nullptr, appNameW());
+    if (wPrev != NULL)
+    {
+        //auto threadId = ::GetWindowThreadProcessId(wPrev, nullptr);
+        //PostThreadMessageW(threadId, WM_QUIT, 0, 0);
+        PostMessageW(wPrev, WM_QUIT, 0, 0);
+    }
+
     try
     {
         const bool isAdmin = isUserInAdminGroup();
         bool showConfig = isAdmin;
-        //if (wcscmp(lpCmdLine, L"setup") == 0) 
+        if (wcscmp(lpCmdLine, L"setup") == 0) 
         {
             if (isAdmin)
             {
                 Settings::setupAppKey();
             }
 
-            //showConfig = true;
+            showConfig = true;
         }
 
         HMenu hMenu(CreatePopupMenu());
@@ -153,6 +161,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     Settings::set(Settings::disabled());
                     break;
                 case NI_Setup:
+                    if (isAdmin)
+                    {
+                        mw_->show();
+                    }
+                    else
+                    {
+                        wchar_t selfname[MAX_PATH] = { 0 };
+                        GetModuleFileNameW(NULL, selfname, (int)std::size(selfname));
+                        ShellExecuteW(NULL, L"runas", selfname, L"setup", NULL, SW_SHOWDEFAULT);
+                    }
                     break;
 
                 default:
@@ -181,7 +199,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     return -1;
 }
 
-static bool isUserInAdminGroup()
+bool isUserInAdminGroup()
 {
     BOOL r;
 
@@ -202,4 +220,26 @@ static bool isUserInAdminGroup()
     }
 
     return r;
+}
+
+int restartAudioService()
+{
+    auto scm = std::make_shared<SCM>();
+    auto service = scm->service(L"audiosrv");
+    auto status = service->status();
+    if (status.state == SERVICE_RUNNING)
+    {
+        if (!service->stop()
+            || service->status().state != SERVICE_STOPPED)
+        {
+            return -1;
+        }
+    }
+    if (!service->start()
+        || service->status().state != SERVICE_RUNNING)
+    {
+        return -1;
+    }
+
+    return 0;
 }

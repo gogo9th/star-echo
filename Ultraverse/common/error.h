@@ -13,6 +13,11 @@ public:
         return message_;
     }
 
+    static WError gle(const wchar_t * msg)
+    {
+        return WError(std::wstring(msg) + L" (" + std::to_wstring(GetLastError()) + L")");
+    }
+
 private:
     std::wstring message_;
 };

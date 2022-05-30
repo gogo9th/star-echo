@@ -21,13 +21,15 @@ bool valueExists(const HKey & hkey, std::wstring_view valuename);
 
 void setValue(std::wstring_view key, std::wstring_view name, std::wstring_view value);
 void setValue(std::wstring_view key, std::wstring_view name, unsigned long value);
-void setValue(const HKey & key, std::wstring_view name, std::wstring_view value);
-void setValue(const HKey & key, std::wstring_view name, unsigned long value);
-
+void setValue(const HKey & hkey, std::wstring_view name, std::wstring_view value);
+void setValue(const HKey & hkey, std::wstring_view name, unsigned long value);
 
 void getValue(std::wstring_view key, std::wstring_view name, std::wstring & value);
 void getValue(std::wstring_view key, std::wstring_view name, unsigned long & value);
-void getValue(const HKey & key, std::wstring_view name, std::wstring & value);
-void getValue(const HKey & key, std::wstring_view name, unsigned long & value);
+void getValue(const HKey & hkey, std::wstring_view name, std::wstring & value);
+void getValue(const HKey & hkey, std::wstring_view name, unsigned long & value);
+
+void deleteValue(std::wstring key, std::wstring value);
+void deleteValue(const HKey & hkey, std::wstring value);
 
 }

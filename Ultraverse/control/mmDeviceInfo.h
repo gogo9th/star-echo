@@ -13,10 +13,21 @@ public:
         return !guid.empty();
     }
 
+    void applyTodo();
+    void enableEnhancements();
+
+
     std::wstring    guid;
     std::wstring    deviceName;
     std::wstring    endpointName;
     unsigned long   deviceState;
     bool            enhancementsDisabled = false;
-    bool            mfxInstalled = false;
+
+    bool            apoMfxInstalled = false;
+    enum ToDoState
+    {
+        ToDoNothing,
+        ApoToBeInstalled,
+        ApoToBeRemoved,
+    }               toDoState = ToDoNothing;
 };
