@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include $(sys.CURRENTDIR)\vars.wxi?>
   
   <Product Id="*"
@@ -17,8 +18,15 @@
       <ComponentGroupRef Id="ProductComponents" />
       <ComponentRef Id='ProgramMenuShortcuts' />
     </Feature>
+
+    <UI>
+      <UIRef Id="WixUI_InstallDir"/>
+    </UI>
+    
+    
   </Product>
 
+  
   <Fragment>
 
     <Component Id="ProgramMenuShortcuts" Guid="EF543DDA-B9FA-41B1-8E2C-8C9C8AE60845" Directory="ProgramMenuDir">
@@ -39,7 +47,7 @@
     
     <Directory Id="TARGETDIR" Name="SourceDir">
       
-      <Directory Id="PlatformProgramFilesFolder">
+      <Directory Id="$(var.PlatformProgramFilesFolder)">
         <Directory Id="INSTALLFOLDER" Name="Ultraverse" />
       </Directory>
 
@@ -49,11 +57,40 @@
       </Directory>
     </Directory>
 
-    
+    <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="Application" Guid="{EBD79ADB-D399-4D5E-8288-B12D994882A4}">
         <File Id="controlApp" Source="$(var.control.TargetPath)"/>
+      </Component>
+      
+      <Component Id="APO" Guid="{84ABCC18-8F85-4CBA-B8D7-428D7DD9FAEB}">
+        <File Id="apoDll" Source="$(var.Q2APO.TargetPath)" KeyPath="yes">
+          <Class Id="{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Context="InprocServer32" Description="Q2APOMFX Class" ThreadingModel="both" />
+          <TypeLib Id="{21E61DA7-E567-485A-9D40-6A99A827AAED}" Description="Q2APOLib" Language="0" MajorVersion="1" MinorVersion="0" />
+        </File>
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="FriendlyName" Value="Q2APO" Type="string" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="Copyright" Value="" Type="string" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="MajorVersion" Value="1" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="MinorVersion" Value="0" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="Flags" Value="13" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="MinInputConnections" Value="1" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="MaxInputConnections" Value="1" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="MinOutputConnections" Value="1" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="MaxOutputConnections" Value="1" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="MaxInstances" Value="-1" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="NumAPOInterfaces" Value="1" Type="integer" Action="write" />
+        <RegistryValue Root="HKCR" Key="AudioEngine\AudioProcessingObjects\{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Name="APOInterface0" Value="{FD7F2B29-24D0-4B5C-B177-592C39F9CA10}" Type="string" Action="write">
+        </RegistryValue>
+      </Component>
+
+      <Component Id="Registry" Guid="{821AA096-7EF5-488C-8DD6-AB4D7F2D1F9D}">
+        <RegistryKey Id="AppRoot" Root="HKLM" Key="SOFTWARE\Ultraverse control" Action="create">
+          <util:PermissionEx User="Users" GenericAll="yes"/>
+          <RegistryValue Name="Settings" Value="disable" Type="string" Action="write"/>
+        </RegistryKey>
+
       </Component>
     </ComponentGroup>
   
