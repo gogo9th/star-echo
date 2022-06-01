@@ -94,6 +94,7 @@ private:
 
     std::mutex                  dnseMtx_;
     std::unique_ptr<DNSE_CH>    dnse_;
+    float                       adjustGain_ = 1;
 
     bool lockedIsPCM_ = false;
     bool lockedSampleRate_ = 0;

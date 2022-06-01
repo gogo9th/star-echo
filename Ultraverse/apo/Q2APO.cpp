@@ -456,7 +456,10 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                         auto l = inputFrames[2 * i];
                         auto r = inputFrames[2 * i + 1];
 
-                        dnse_->filter(l, r, outputFrames + 2 * i, outputFrames + 2 * i + 1);
+                        int16_t ol, or ;
+                        dnse_->filter(l, r, &ol, &or);
+                        outputFrames[2 * i] = int16_t(std::round(float(ol) * adjustGain_));
+                        outputFrames[2 * i + 1] = int16_t(std::round(float(or ) * adjustGain_));
                     }
                 }
                 else
@@ -479,8 +482,8 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                         int16_t ol, or;
                         dnse_->filter(l, r, &ol, &or);
 
-                        outputFrames[2 * i] = float(ol) / 0x7FFF;
-                        outputFrames[2 * i + 1] = float(or) / 0x7FFF;
+                        outputFrames[2 * i] = (float(ol) / 0x7FFF) * adjustGain_;
+                        outputFrames[2 * i + 1] = (float(or) / 0x7FFF) * adjustGain_;
                     }
                 }
                 else
@@ -585,13 +588,37 @@ void Q2APOMFX::parseSettings(const std::wstring & settings)
 
 void Q2APOMFX::createDnse()
 {
+    static const float adjustGains[13][11] = {
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },     // RS 1
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.203f }, // RS 10
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.562f },
+    };
+
     std::lock_guard lk(dnseSettingMtx_);
 
     std::unique_ptr<DNSE_CH> newFilter;
-    if (chRoomSize_ != 0 && chGain_ != 0
+    if (chRoomSize_ >= 1 && chRoomSize_ <= 13
+        && chGain_ >= 0 && chGain_ <= 11
         && lockedSampleRate_ != 0)
     {
+        adjustGain_ = adjustGains[chRoomSize_ - 1][chGain_];
+        dbg() << "Adjust gain: " << adjustGain_;
+
         newFilter = std::make_unique<DNSE_CH>(chRoomSize_, chGain_, lockedSampleRate_);
+    }
+    else if (chRoomSize_ != 0 || chGain_ != 0)
+    {
+        err() << "Invalig filter settings: " << chRoomSize_ << ", " << chGain_;
     }
 
     {
