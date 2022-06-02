@@ -133,7 +133,7 @@ Q2APOMFX::Q2APOMFX()
 {
     dbg() << "Creating";
 
-    parseSettings(Settings::current());
+    parseSettings(Settings::currentEffect());
 }
 
 Q2APOMFX::~Q2APOMFX()
@@ -565,7 +565,7 @@ void Q2APOMFX::parseSettings(const std::wstring & settings)
 
     auto params = stringSplit(settings, L",");
 
-    if (settings == Settings::disabled()
+    if (settings == Settings::effectDisabledString()
         || params.empty())
     {
         chRoomSize_ = 0;
@@ -663,7 +663,7 @@ void Q2APOMFX::settingsMonitor()
         auto hKey = Registry::openKey(Settings::appPath, KEY_NOTIFY | KEY_QUERY_VALUE | KEY_WOW64_64KEY);
         HANDLE waitObjs[] = { hEvent, stopSettingMonitorEvent_ };
 
-        auto settingCache_ = Settings::current();
+        auto settingCache_ = Settings::currentEffect();
 
         while (true)
         {
@@ -675,7 +675,7 @@ void Q2APOMFX::settingsMonitor()
             {
                 case WAIT_OBJECT_0:
                 {
-                    auto newSetting = Settings::current();
+                    auto newSetting = Settings::currentEffect();
                     if (newSetting == settingCache_)
                     {
                         break;

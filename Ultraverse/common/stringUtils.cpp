@@ -12,6 +12,14 @@ void toUpperCase(std::wstring & s)
     }
 }
 
+std::wstring toUpperCase(const std::wstring & s)
+{
+    std::wstring r(s);
+    toUpperCase(r);
+    return r;
+}
+
+
 std::wstring toString(const GUID & guid)
 {
     std::wstring str;

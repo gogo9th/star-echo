@@ -38,8 +38,17 @@ const char * appName()
 
 //
 
-static const wchar_t setOperaHall[] = L"ch,10,10";
-static const wchar_t setLiveCafe[] = L"ch,13,10";
+static const std::wstring selfExeFilepath()
+{
+    wchar_t selfName[MAX_PATH] = { 0 };
+    GetModuleFileNameW(NULL, selfName, (int)std::size(selfName));
+    return selfName;
+}
+
+//
+
+static const wchar_t operaHallMode[] = L"ch,10,10";
+static const wchar_t liveCafeMode[] = L"ch,13,10";
 
 enum
 {
@@ -48,6 +57,7 @@ enum
     NI_Disable,
     NI_Enable,
     NI_Setup,
+    NI_Autostart,
 };
 
 std::unique_ptr<MainWindow> mw_;
@@ -105,32 +115,53 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Disable");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
 
-            auto current = Settings::current();
-            if (!Settings::isEnabled(current))
+            auto current = Settings::currentEffect();
+            if (!Settings::isEffectEnabled(current))
             {
                 CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Disable, MF_BYCOMMAND);
             }
             else
             {
-                if (current == setOperaHall)
+                if (current == operaHallMode)
                 {
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
                 }
-                else if (current == setLiveCafe)
+                else if (current == liveCafeMode)
                 {
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
                 }
                 else
                 {
-                    Settings::set(setOperaHall);
+                    Settings::setEffect(operaHallMode);
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
                 }
             }
         }
 
         InsertMenuW(hMenu, NI_Setup, MF_BYCOMMAND, NI_Setup, L"Setup");
-        InsertMenuW(hMenu, WM_QUIT, MF_BYCOMMAND, WM_QUIT, L"Exit");
 
+        SHSTOCKICONINFO stockIconInfo;
+        stockIconInfo.cbSize = sizeof(stockIconInfo);
+        if (SHGetStockIconInfo(SHSTOCKICONID::SIID_SHIELD, SHGSI_ICON | SHGSI_SMALLICON, &stockIconInfo) == S_OK)
+        {
+            Icon icon(stockIconInfo.hIcon, true);
+            ICONINFO iconInfo;
+            GetIconInfo(icon.small(), &iconInfo);
+
+            MENUITEMINFOW mi;
+            mi.cbSize = sizeof(mi);
+            mi.fMask = MIIM_BITMAP;
+            //mi.hbmpItem = iconInfo.hbmColor;
+            mi.hbmpItem = (HBITMAP)CopyImage(iconInfo.hbmColor, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+            SetMenuItemInfoW(hMenu, NI_Setup, FALSE, &mi);
+
+            //SetMenuItemBitmaps()
+        }
+
+        InsertMenuW(hMenu, NI_Autostart, MF_BYCOMMAND, NI_Autostart, L"Launch on startup");
+        CheckMenuItem(hMenu, NI_Autostart, MF_BYCOMMAND | (Settings::isAutostart(appNameW(), selfExeFilepath()) ? MF_CHECKED : MF_UNCHECKED));
+
+        InsertMenuW(hMenu, WM_QUIT, MF_BYCOMMAND, WM_QUIT, L"Exit");
 
         mw_ = std::make_unique<MainWindow>(dlgProc_);
         mw_->create();
@@ -150,15 +181,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 case NI_OperaHall:
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
-                    Settings::set(setOperaHall);
+                    Settings::setEffect(operaHallMode);
                     break;
                 case NI_LiveCafe:
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
-                    Settings::set(setLiveCafe);
+                    Settings::setEffect(liveCafeMode);
                     break;
                 case NI_Disable:
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Disable, MF_BYCOMMAND);
-                    Settings::set(Settings::disabled());
+                    Settings::setEffect(Settings::effectDisabledString());
                     break;
                 case NI_Setup:
                     if (isAdmin)
@@ -167,11 +198,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     }
                     else
                     {
-                        wchar_t selfname[MAX_PATH] = { 0 };
-                        GetModuleFileNameW(NULL, selfname, (int)std::size(selfname));
-                        ShellExecuteW(NULL, L"runas", selfname, L"setup", NULL, SW_SHOWDEFAULT);
+                        ShellExecuteW(NULL, L"runas", selfExeFilepath().data(), L"setup", NULL, SW_SHOWDEFAULT);
                     }
                     break;
+                case NI_Autostart:
+                {
+                    auto current = GetMenuState(hMenu, NI_Autostart, MF_BYCOMMAND | MF_CHECKED);
+                    current = !current;
+                    if (current)
+                    {
+                        Settings::setAutostart(appNameW(), selfExeFilepath());
+                    }
+                    else
+                    {
+                        Settings::removeAutostart(appNameW());
+                    }
+                    CheckMenuItem(hMenu, NI_Autostart, MF_BYCOMMAND | (current ? MF_CHECKED : MF_UNCHECKED));
+                    break;
+                }
 
                 default:
                     TranslateMessage(&msg);

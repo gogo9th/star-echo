@@ -7,18 +7,52 @@
 namespace Settings
 {
 
-static const wchar_t settingsName[] = L"Settings";
+static const auto autorunKey = L"HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"sv;
+static const auto settingsValueName = L"Settings"sv;
 
-std::wstring current()
+
+std::wstring currentEffect()
 {
     std::wstring value;
-    Registry::getValue(appPath, settingsName, value);
+    Registry::getValue(appPath, settingsValueName, value);
     return value;
 }
 
-void set(const std::wstring & value)
+void setEffect(const std::wstring & value)
 {
-    Registry::setValue(appPath, settingsName, value);
+    Registry::setValue(appPath, settingsValueName, value);
+}
+
+bool Settings::isEffectEnabled(const std::wstring & str)
+{
+    return !str.empty() && str != L"disable";
+}
+
+std::wstring Settings::effectDisabledString()
+{
+    return L"disable";
+}
+
+bool isAutostart(std::wstring_view valueName, const std::wstring & value)
+{
+    auto hKey = Registry::openKey(autorunKey);
+    if (Registry::valueExists(hKey, valueName))
+    {
+        std::wstring rv;
+        Registry::getValue(hKey, valueName, rv);
+        return toUpperCase(std::as_const(rv)) == toUpperCase(value);
+    }
+    return false;
+}
+
+void setAutostart(std::wstring_view valueName, const std::wstring & value)
+{
+    Registry::setValue(autorunKey, valueName, value);
+}
+
+void removeAutostart(std::wstring_view valueName)
+{
+    Registry::deleteValue(autorunKey, valueName);
 }
 
 void setupAppKey()
@@ -30,20 +64,11 @@ void setupAppKey()
     Registry::setKeyWritable(appPath);
 
     auto hKey = Registry::openKey(appPath, KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_WOW64_64KEY);
-    if (!Registry::valueExists(hKey, settingsName))
+    if (!Registry::valueExists(hKey, settingsValueName))
     {
-        Registry::setValue(hKey, settingsName, L"");
+        Registry::setValue(hKey, settingsValueName, L"");
     }
 }
 
-bool Settings::isEnabled(const std::wstring & str)
-{
-    return !str.empty() && str != L"disable";
-}
-
-std::wstring Settings::disabled()
-{
-    return L"disable";
-}
 
 }

@@ -258,13 +258,13 @@ void getValue(const HKey & hkey, std::wstring_view name, unsigned long & value)
     value = *(unsigned long *)buf.get();
 }
 
-void deleteValue(std::wstring key, std::wstring value)
+void deleteValue(std::wstring_view key, std::wstring_view value)
 {
-    auto hkey = openKey(key, KEY_QUERY_VALUE | KEY_WOW64_64KEY);
+    auto hkey = openKey(key, KEY_SET_VALUE | KEY_QUERY_VALUE | KEY_WOW64_64KEY);
     deleteValue(hkey, value);
 }
 
-void deleteValue(const HKey & hkey, std::wstring value)
+void deleteValue(const HKey & hkey, std::wstring_view value)
 {
     auto status = RegDeleteValueW(hkey, value.data());
     if (status != ERROR_SUCCESS)

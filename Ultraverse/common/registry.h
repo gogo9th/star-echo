@@ -29,7 +29,7 @@ void getValue(std::wstring_view key, std::wstring_view name, unsigned long & val
 void getValue(const HKey & hkey, std::wstring_view name, std::wstring & value);
 void getValue(const HKey & hkey, std::wstring_view name, unsigned long & value);
 
-void deleteValue(std::wstring key, std::wstring value);
-void deleteValue(const HKey & hkey, std::wstring value);
+void deleteValue(std::wstring_view key, std::wstring_view value);
+void deleteValue(const HKey & hkey, std::wstring_view value);
 
 }

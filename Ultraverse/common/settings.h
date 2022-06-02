@@ -4,12 +4,15 @@ namespace Settings
 {
     const auto appPath = L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Ultraverse Control"sv;
 
-    std::wstring current();
-    void set(const std::wstring & value);
+    std::wstring currentEffect();
+    void setEffect(const std::wstring & value);
 
-    bool isEnabled(const std::wstring &);
-    std::wstring disabled();
+    bool isEffectEnabled(const std::wstring &);
+    std::wstring effectDisabledString();
+
+    bool isAutostart(std::wstring_view valueName, const std::wstring & value);
+    void setAutostart(std::wstring_view valueName, const std::wstring & value);
+    void removeAutostart(std::wstring_view valueName);
 
     void setupAppKey();
-
 }
