@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include $(sys.CURRENTDIR)\vars.wxi?>
-  
+
   <Product Id="*"
-           Name="Ultraverse" 
-           Language="1033" 
-           Version="1.0.0.0" 
+           Name="Ultraverse"
+           Language="1033"
+           Version="1.0.3.0"
            Manufacturer="gogo9th"
            UpgradeCode="c0a4396d-6b68-4e60-9031-98337cd5bca6">
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
@@ -22,49 +22,54 @@
     <UI>
       <UIRef Id="WixUI_InstallDir"/>
     </UI>
-    
-    
+
+    <Icon Id="AppIcon" SourceFile="$(var.control.ProjectDir)\control.ico"/>
+
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <!--Property Id="ARPURLINFOABOUT" Value="https://" /-->
+    <!--Property Id="ARPCOMMENTS" Value="Comments" /-->
+    <!--WixVariable Id="WixUILicenseRtf" Value="license.rtf" /-->
+    <!--WixVariable Id="WixUIBannerBmp" Value="WixUIBanner.bmp" /-->
+
+    <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
   </Product>
 
-  
+
   <Fragment>
 
     <Component Id="ProgramMenuShortcuts" Guid="EF543DDA-B9FA-41B1-8E2C-8C9C8AE60845" Directory="ProgramMenuDir">
-      <!--<Shortcut Id="desktopShortcut" Name="Ultraverse Control" Icon='icon.ico' Directory="DesktopFolder"
+      <!--<Shortcut Id="desktopShortcut" Name="Ultraverse Control" Icon='AppIcon' Directory="DesktopFolder"
                 Target='[#controlApp]'
                 WorkingDirectory='APPLICATIONFOLDER' Advertise='no'/>
       -->
       <Shortcut Id="startmenuShortcut" Name="Ultraverse Control"
                 Target='[#controlApp]'
                 WorkingDirectory='APPLICATIONFOLDER'/>
-      
-      <Shortcut Id="UninstallProduct" Name="Uninstall Ultraverse" Target="[System64Folder]msiexec.exe" Arguments="/x [ProductCode]"
+
+      <Shortcut Id="UninstallProduct" Name="Uninstall Ultraverse" Target="[PlatformSystemFolder]msiexec.exe" Arguments="/x [ProductCode]"
                 Description="Uninstalls Ultraverse"/>
       <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
       <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
     </Component>
-    
-    
+
+
     <Directory Id="TARGETDIR" Name="SourceDir">
-      
       <Directory Id="$(var.PlatformProgramFilesFolder)">
         <Directory Id="INSTALLFOLDER" Name="Ultraverse" />
       </Directory>
-
       <Directory Id="ProgramMenuFolder">
         <Directory Id="ProgramMenuDir" Name="Ultraverse">
         </Directory>
       </Directory>
     </Directory>
 
-    <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
-    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-    
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="Application" Guid="{EBD79ADB-D399-4D5E-8288-B12D994882A4}">
         <File Id="controlApp" Source="$(var.control.TargetPath)"/>
       </Component>
-      
+
       <Component Id="APO" Guid="{84ABCC18-8F85-4CBA-B8D7-428D7DD9FAEB}">
         <File Id="apoDll" Source="$(var.Q2APO.TargetPath)" KeyPath="yes">
           <Class Id="{B551B56A-FB72-44D0-B545-C66911A8EFC8}" Context="InprocServer32" Description="Q2APOMFX Class" ThreadingModel="both" />
@@ -90,9 +95,23 @@
           <util:PermissionEx User="Users" GenericAll="yes"/>
           <RegistryValue Name="Settings" Value="disable" Type="string" Action="write"/>
         </RegistryKey>
-
       </Component>
+
     </ComponentGroup>
-  
+
+    <CustomAction Id="Install" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
+              ExeCommand="[#controlApp] installDefault" />
+
+    <CustomAction Id="Uninstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
+              ExeCommand="[#controlApp] uninstall" />
+
+    <util:CloseApplication CloseMessage="yes" Target="control.exe" Description="Please close control.exe before continuing.">Installed</util:CloseApplication>
+
+    <InstallExecuteSequence>
+      <Custom Action='Install' After='InstallFiles'>NOT REMOVE</Custom>
+      <Custom Action='Uninstall' After='InstallInitialize'>Installed AND (REMOVE = "ALL")</Custom>
+      <!-->Custom Action="WixCloseApplication" Before="InstallInitialize"></Custom-->
+    </InstallExecuteSequence>
+
   </Fragment>
 </Wix>

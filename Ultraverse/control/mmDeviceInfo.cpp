@@ -10,10 +10,12 @@
 #include <apo/Q2APO.h>
 
 
+static auto renderKey_ = L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render\\"s;
+
 
 MMDeviceInfo::MMDeviceInfo(const std::wstring & deviceGuid)
 {
-    auto devRoot = Registry::openKey(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render\\" + deviceGuid);
+    auto devRoot = Registry::openKey(renderKey_ + deviceGuid);
 
     Registry::getValue(devRoot, L"DeviceState", deviceState);
 
@@ -54,6 +56,46 @@ MMDeviceInfo::MMDeviceInfo(const std::wstring & deviceGuid)
 
 }
 
+void MMDeviceInfo::installApo()
+{
+    auto hKeyFxProps = Registry::openKey(renderKey_ + guid + L"\\FxProperties", KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_WOW64_64KEY);
+
+    auto KEY_FX_ModeEffectClsid = toString(PKEY_FX_ModeEffectClsid);
+    if (Registry::valueExists(hKeyFxProps, KEY_FX_ModeEffectClsid))
+    {
+        std::wstring previousApoGuid;
+        Registry::getValue(hKeyFxProps, KEY_FX_ModeEffectClsid, previousApoGuid);
+        Registry::setValue(hKeyFxProps, toString(PKEY_Q2FX_PreviousEffectClsid), previousApoGuid);
+    }
+    Registry::setValue(hKeyFxProps, KEY_FX_ModeEffectClsid, toString(__uuidof(Q2APOMFX)));
+
+    apoMfxInstalled = true;
+}
+
+void MMDeviceInfo::removeApo()
+{
+    auto hKeyFxProps = Registry::openKey(renderKey_ + guid + L"\\FxProperties", KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_WOW64_64KEY);
+
+    auto KEY_FX_ModeEffectClsid = toString(PKEY_FX_ModeEffectClsid);
+    if (Registry::valueExists(hKeyFxProps, KEY_FX_ModeEffectClsid))
+    {
+        auto KEY_Q2FX_PreviousEffectClsid = toString(PKEY_Q2FX_PreviousEffectClsid);
+        if (Registry::valueExists(hKeyFxProps, KEY_Q2FX_PreviousEffectClsid))
+        {
+            std::wstring previousApoGuid;
+            Registry::getValue(hKeyFxProps, KEY_Q2FX_PreviousEffectClsid, previousApoGuid);
+            Registry::setValue(hKeyFxProps, KEY_FX_ModeEffectClsid, previousApoGuid);
+            Registry::deleteValue(hKeyFxProps, KEY_Q2FX_PreviousEffectClsid);
+        }
+        else
+        {
+            Registry::deleteValue(hKeyFxProps, KEY_FX_ModeEffectClsid);
+        }
+    }
+
+    apoMfxInstalled = false;
+}
+
 void MMDeviceInfo::applyTodo()
 {
     if (guid.empty())
@@ -65,46 +107,14 @@ void MMDeviceInfo::applyTodo()
     {
         case ApoToBeInstalled:
         {
-            auto hKeyFxProps = Registry::openKey(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render\\" + guid + L"\\FxProperties",
-                                                 KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_WOW64_64KEY);
-
-            auto KEY_FX_ModeEffectClsid = toString(PKEY_FX_ModeEffectClsid);
-            if (Registry::valueExists(hKeyFxProps, KEY_FX_ModeEffectClsid))
-            {
-                std::wstring previousApoGuid;
-                Registry::getValue(hKeyFxProps, KEY_FX_ModeEffectClsid, previousApoGuid);
-                Registry::setValue(hKeyFxProps, toString(PKEY_Q2FX_PreviousEffectClsid), previousApoGuid);
-            }
-            Registry::setValue(hKeyFxProps, KEY_FX_ModeEffectClsid, toString(__uuidof(Q2APOMFX)));
-
-            apoMfxInstalled = true;
+            installApo();
             toDoState = ToDoNothing;
             break;
         }
 
         case ApoToBeRemoved:
         {
-            auto hKeyFxProps = Registry::openKey(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render\\" + guid + L"\\FxProperties",
-                                                 KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_WOW64_64KEY);
-
-            auto KEY_FX_ModeEffectClsid = toString(PKEY_FX_ModeEffectClsid);
-            if (Registry::valueExists(hKeyFxProps, KEY_FX_ModeEffectClsid))
-            {
-                auto KEY_Q2FX_PreviousEffectClsid = toString(PKEY_Q2FX_PreviousEffectClsid);
-                if (Registry::valueExists(hKeyFxProps, KEY_Q2FX_PreviousEffectClsid))
-                {
-                    std::wstring previousApoGuid;
-                    Registry::getValue(hKeyFxProps, KEY_Q2FX_PreviousEffectClsid, previousApoGuid);
-                    Registry::setValue(hKeyFxProps, KEY_FX_ModeEffectClsid, previousApoGuid);
-                    Registry::deleteValue(hKeyFxProps, KEY_Q2FX_PreviousEffectClsid);
-                }
-                else
-                {
-                    Registry::deleteValue(hKeyFxProps, KEY_FX_ModeEffectClsid);
-                }
-            }
-
-            apoMfxInstalled = false;
+            removeApo();
             toDoState = ToDoNothing;
             break;
         }
@@ -113,8 +123,25 @@ void MMDeviceInfo::applyTodo()
 
 void MMDeviceInfo::enableEnhancements()
 {
-    auto hKeyFxProps = Registry::openKey(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render\\" + guid + L"\\FxProperties",
-                                         KEY_SET_VALUE | KEY_WOW64_64KEY);
+    auto hKeyFxProps = Registry::openKey(renderKey_ + guid + L"\\FxProperties", KEY_SET_VALUE | KEY_WOW64_64KEY);
     Registry::setValue(hKeyFxProps, toString(PKEY_AudioEndpoint_Disable_SysFx), 0);
     enhancementsDisabled = false;
+}
+
+std::vector<std::shared_ptr<MMDeviceInfo>> getPlaybackDevices()
+{
+    std::vector<std::shared_ptr<MMDeviceInfo>> r;
+
+    auto devices = Registry::subKeys(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render");
+    for (auto & device : devices)
+    {
+        auto devInfo = std::make_shared<MMDeviceInfo>(device);
+        if (!devInfo->isPresent())
+        {
+            continue;
+        }
+
+        r.push_back(devInfo);
+    }
+    return r;
 }

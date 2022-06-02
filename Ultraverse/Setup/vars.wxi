@@ -3,7 +3,9 @@
   <!-- Product name as you want it to appear in Add/Remove Programs-->
   <?if $(var.Platform) = x64 ?>
     <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+    <?define PlatformSystemFolder = "System64Folder" ?>
   <?else ?>
     <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+    <?define PlatformSystemFolder = "SystemFolder" ?>
   <?endif ?>
 </Include>

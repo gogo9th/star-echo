@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <memory>
 
 
 class MMDeviceInfo
@@ -12,6 +14,9 @@ public:
     {
         return !guid.empty();
     }
+
+    void installApo();
+    void removeApo();
 
     void applyTodo();
     void enableEnhancements();
@@ -31,3 +36,5 @@ public:
         ApoToBeRemoved,
     }               toDoState = ToDoNothing;
 };
+
+std::vector<std::shared_ptr<MMDeviceInfo>> getPlaybackDevices();

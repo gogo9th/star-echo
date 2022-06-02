@@ -13,6 +13,7 @@
 #include "common/settings.h"
 
 #include "../apo/Q2APO.h"
+#include <control/mmDevices.h>
 
 //#include <Shlobj.h>
 
@@ -83,6 +84,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     InitCtrls.dwICC = ICC_WIN95_CLASSES;
     InitCommonControlsEx(&InitCtrls);
 
+    const bool isAdmin = isUserInAdminGroup();
+
     auto wPrev = FindWindowW(nullptr, appNameW());
     if (wPrev != NULL)
     {
@@ -93,7 +96,42 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     try
     {
-        const bool isAdmin = isUserInAdminGroup();
+        if (isAdmin)
+        {
+            if (wcscmp(lpCmdLine, L"installDefault") == 0)
+            {
+                auto defaultDev = getDefaultMMDevice(eRender);
+                auto devInfo = std::make_shared<MMDeviceInfo>(defaultDev);
+                if (!devInfo->apoMfxInstalled)
+                {
+                    devInfo->installApo();
+                    devInfo->enableEnhancements();
+                    restartAudioService();
+                }
+                Settings::setAutostart(appNameW(), selfExeFilepath());
+                return 0;
+            }
+            else if (wcscmp(lpCmdLine, L"uninstall") == 0)
+            {
+                auto devices = getPlaybackDevices();
+                bool wasRemoved = false;
+                for (auto & device : devices)
+                {
+                    if (device->apoMfxInstalled)
+                    {
+                        device->removeApo();
+                        wasRemoved = true;
+                    }
+                }
+                if (wasRemoved)
+                {
+                    restartAudioService();
+                }
+                return 0;
+            }
+        }
+
+
         bool showConfig = isAdmin;
         if (wcscmp(lpCmdLine, L"setup") == 0) 
         {
@@ -139,23 +177,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
 
         InsertMenuW(hMenu, NI_Setup, MF_BYCOMMAND, NI_Setup, L"Setup");
-
-        SHSTOCKICONINFO stockIconInfo;
-        stockIconInfo.cbSize = sizeof(stockIconInfo);
-        if (SHGetStockIconInfo(SHSTOCKICONID::SIID_SHIELD, SHGSI_ICON | SHGSI_SMALLICON, &stockIconInfo) == S_OK)
+        if (!isAdmin)
         {
-            Icon icon(stockIconInfo.hIcon, true);
-            ICONINFO iconInfo;
-            GetIconInfo(icon.small(), &iconInfo);
+            SHSTOCKICONINFO stockIconInfo;
+            stockIconInfo.cbSize = sizeof(stockIconInfo);
+            if (SHGetStockIconInfo(SHSTOCKICONID::SIID_SHIELD, SHGSI_ICON | SHGSI_SMALLICON, &stockIconInfo) == S_OK)
+            {
+                Icon icon(stockIconInfo.hIcon, true);
+                ICONINFO iconInfo;
+                GetIconInfo(icon.small(), &iconInfo);
 
-            MENUITEMINFOW mi;
-            mi.cbSize = sizeof(mi);
-            mi.fMask = MIIM_BITMAP;
-            //mi.hbmpItem = iconInfo.hbmColor;
-            mi.hbmpItem = (HBITMAP)CopyImage(iconInfo.hbmColor, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-            SetMenuItemInfoW(hMenu, NI_Setup, FALSE, &mi);
+                MENUITEMINFOW mi;
+                mi.cbSize = sizeof(mi);
+                mi.fMask = MIIM_BITMAP;
+                //mi.hbmpItem = iconInfo.hbmColor;
+                mi.hbmpItem = (HBITMAP)CopyImage(iconInfo.hbmColor, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+                SetMenuItemInfoW(hMenu, NI_Setup, FALSE, &mi);
 
-            //SetMenuItemBitmaps()
+                //SetMenuItemBitmaps()
+            }
         }
 
         InsertMenuW(hMenu, NI_Autostart, MF_BYCOMMAND, NI_Autostart, L"Launch on startup");

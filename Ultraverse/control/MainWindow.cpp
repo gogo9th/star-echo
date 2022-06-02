@@ -102,6 +102,7 @@ INT_PTR MainWindow::dlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
         }
 
+        case WM_CLOSE:
         case WM_QUIT:
         {
             PostQuitMessage(0);
@@ -207,19 +208,7 @@ void MainWindow::updateDeviceFromUi(int index)
 
 void MainWindow::updateDeviceInfos()
 {
-    deviceInfos_.clear();
-
-    auto devices = Registry::subKeys(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render");
-    for (auto & device : devices)
-    {
-        auto devInfo = std::make_shared<MMDeviceInfo>(device);
-        if (!devInfo->isPresent())
-        {
-            continue;
-        }
-
-        deviceInfos_.push_back(devInfo);
-    }
+    deviceInfos_ = getPlaybackDevices();
 
     defaultDevilceGuid_ = getDefaultMMDevice(eRender);
     ListView_DeleteAllItems(deviceList_);
