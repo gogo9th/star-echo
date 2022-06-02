@@ -82,9 +82,7 @@ LRESULT NotifyIcon::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             switch (lParam)
             {
-                //case WM_LBUTTONDBLCLK:
-                //    ShowWindow(hWnd, SW_RESTORE);
-                //    break;
+                case WM_LBUTTONDOWN:
                 case WM_RBUTTONDOWN:
                 case WM_CONTEXTMENU:
                 {

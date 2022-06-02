@@ -86,14 +86,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     const bool isAdmin = isUserInAdminGroup();
 
-    auto wPrev = FindWindowW(nullptr, appNameW());
-    if (wPrev != NULL)
-    {
-        //auto threadId = ::GetWindowThreadProcessId(wPrev, nullptr);
-        //PostThreadMessageW(threadId, WM_QUIT, 0, 0);
-        PostMessageW(wPrev, WM_QUIT, 0, 0);
-    }
-
     try
     {
         if (isAdmin)
@@ -132,15 +124,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
 
 
-        bool showConfig = isAdmin;
+        bool showConfig = false;
+        auto wPreviousInstance = FindWindowW(nullptr, appNameW());
+
         if (wcscmp(lpCmdLine, L"setup") == 0) 
         {
+            // when launched with setup option, close previous instance
+            if (wPreviousInstance != NULL)
+            {
+                //auto threadId = ::GetWindowThreadProcessId(wPreviousInstance, nullptr);
+                //PostThreadMessageW(threadId, WM_QUIT, 0, 0);
+                PostMessageW(wPreviousInstance, WM_QUIT, 0, 0);
+            }
+
             if (isAdmin)
             {
                 Settings::setupAppKey();
             }
 
             showConfig = true;
+        }
+        else if (wPreviousInstance != NULL)
+        {
+            // do not launch more instances without setup option
+            return 0;
         }
 
         HMenu hMenu(CreatePopupMenu());
