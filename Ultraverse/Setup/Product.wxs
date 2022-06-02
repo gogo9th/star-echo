@@ -3,13 +3,15 @@
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include $(sys.CURRENTDIR)\vars.wxi?>
 
+  <?define ProductVersion="1.0.3.0"?>
+  
   <Product Id="*"
            Name="Ultraverse"
            Language="1033"
-           Version="1.0.3.0"
+           Version="$(var.ProductVersion)"
            Manufacturer="gogo9th"
            UpgradeCode="c0a4396d-6b68-4e60-9031-98337cd5bca6">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" Comments="Version $(var.ProductVersion)"/>
     <MediaTemplate EmbedCab="yes"/>
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
