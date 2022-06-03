@@ -533,9 +533,9 @@ STDMETHODIMP Q2APOMFX::GetFormat(UINT nFormat, IAudioMediaType ** ppFormat)
 
     *ppFormat = NULL;
 
-    auto hr = CreateAudioMediaTypeFromUncompressedAudioFormat(
-        nFormat < std::size(availableFormatsPcm_) ? &availableFormatsPcm_[nFormat].format : &availableFormatsFloat_[nFormat].format,
-        ppFormat);
+    auto hr = CreateAudioMediaTypeFromUncompressedAudioFormat(nFormat < std::size(availableFormatsPcm_) ? &availableFormatsPcm_[nFormat].format
+                                                              : &availableFormatsFloat_[nFormat - std::size(availableFormatsPcm_)].format,
+                                                              ppFormat);
     return hr;
 }
 
@@ -547,13 +547,15 @@ STDMETHODIMP Q2APOMFX::GetFormatRepresentation(UINT nFormat, LPWSTR * ppwstrForm
     if (ppwstrFormatRep == nullptr) return E_POINTER;
     if (nFormat >= std::size(availableFormatsPcm_) + std::size(availableFormatsFloat_)) return E_INVALIDARG;
 
-    auto & fmt = nFormat < std::size(availableFormatsPcm_) ? availableFormatsPcm_[nFormat] : availableFormatsFloat_[nFormat];
+    auto & fmt = nFormat < std::size(availableFormatsPcm_) ?
+        availableFormatsPcm_[nFormat]
+        : availableFormatsFloat_[nFormat - std::size(availableFormatsPcm_)];
 
-    auto nameLen = (wcslen(fmt.name) + 1) * sizeof(WCHAR);
-    auto nameStr = (LPWSTR)CoTaskMemAlloc(nameLen);
+    auto nameLenZ = wcslen(fmt.name) + 1;
+    auto nameStr = (LPWSTR)CoTaskMemAlloc(nameLenZ * sizeof(WCHAR));
     if (nameStr == NULL) return E_OUTOFMEMORY;
 
-    std::copy(fmt.name, fmt.name + nameLen, nameStr);
+    std::copy(fmt.name, fmt.name + nameLenZ, nameStr);
     *ppwstrFormatRep = nameStr;
     return S_OK;
 }

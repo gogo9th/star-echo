@@ -20,8 +20,8 @@ class Q2APOMFX :
     public CComCoClass<Q2APOMFX, &CLSID_Q2APOMFX>,
     public CBaseAudioProcessingObject,
     //public IMMNotificationClient,
-    //public IAudioProcessingObjectNotifications,
-    public IAudioSystemEffectsCustomFormats,
+    //public IAudioProcessingObjectNotifications,   // this adds extra formats to device format list
+    //public IAudioSystemEffectsCustomFormats,
     //public IAudioSystemEffects3,  // Windows 11
     public IAudioSystemEffects2,    // 8.1
     //public IAudioSystemEffects,
@@ -35,7 +35,7 @@ public:
         COM_INTERFACE_ENTRY(IAudioSystemEffects)
         COM_INTERFACE_ENTRY(IAudioSystemEffects2)
         //COM_INTERFACE_ENTRY(IAudioSystemEffects3)
-        COM_INTERFACE_ENTRY(IAudioSystemEffectsCustomFormats)
+        //COM_INTERFACE_ENTRY(IAudioSystemEffectsCustomFormats)
         //COM_INTERFACE_ENTRY(IMMNotificationClient)
         //COM_INTERFACE_ENTRY(IAudioProcessingObjectNotifications)
         COM_INTERFACE_ENTRY(IAudioProcessingObjectRT)
