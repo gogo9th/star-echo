@@ -154,7 +154,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         if (Registry::keyExists(Settings::appPath))
         {
             InsertMenuW(hMenu, NI_OperaHall, MF_BYCOMMAND, NI_OperaHall, L"Opera Hall");
-            InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe, L"Live cafe");
+            InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe, L"Live Cafe");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
             InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Disable");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
@@ -204,7 +204,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
         }
 
-        InsertMenuW(hMenu, NI_Autostart, MF_BYCOMMAND, NI_Autostart, L"Launch on startup");
+        InsertMenuW(hMenu, NI_Autostart, MF_BYCOMMAND, NI_Autostart, L"Launch on Startup");
         CheckMenuItem(hMenu, NI_Autostart, MF_BYCOMMAND | (Settings::isAutostart(appNameW(), selfExeFilepath()) ? MF_CHECKED : MF_UNCHECKED));
 
         InsertMenuW(hMenu, WM_QUIT, MF_BYCOMMAND, WM_QUIT, L"Exit");
@@ -268,6 +268,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     DispatchMessageW(&msg);
             }
         }
+
+        Settings::setEffect(Settings::effectDisabledString());
 
         return 0;
     }
