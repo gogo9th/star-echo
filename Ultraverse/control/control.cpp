@@ -100,7 +100,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     devInfo->enableEnhancements();
                     restartAudioService();
                 }
-                Settings::setAutostart(appNameW(), selfExeFilepath());
                 return 0;
             }
             else if (wcscmp(lpCmdLine, L"uninstall") == 0)
