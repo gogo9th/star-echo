@@ -12,7 +12,7 @@ DNSE_EQ::DNSE_EQ(const std::array<int16_t, 7> & gains, int sampleRate)
     int iGain = 0;
     for (auto & g : gains)
     {
-        auto ng = std::max<short>(0, std::min<short>(std::size(eqGains) - 1, g));
+        auto ng = std::max<int16_t>(0, std::min<int16_t>(int16_t(std::size(eqGains)) - 1, g));
         gains_[iGain++] = eqGains[ng];
     }
 

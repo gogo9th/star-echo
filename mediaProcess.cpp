@@ -184,7 +184,7 @@ bool FilterFab::addDesc(const std::string & desc)
         {
             int a1 = params.size() > 1 ? std::stoi(params[1]) : 10;
             int a2 = params.size() > 2 ? std::stoi(params[2]) : 10/*9*/;
-            filterCtors_.push_back(std::bind([] (int a1, int a2, int sr)
+            filterCtors_.push_back(std::bind([] (int a1, int a2, int sr) 
                                              {
                                                  return std::make_unique<DNSE_CH>(a1, a2, sr);
                                              }, a1, a2, std::placeholders::_1));
@@ -208,6 +208,30 @@ bool FilterFab::addDesc(const std::string & desc)
                                              {
                                                  return std::make_unique<DNSE_EQ>(a1, sr);
                                              }, gains, std::placeholders::_1));
+            return true;
+        }
+        else if (boost::iequals(filterName, "ballad"))
+        {
+            filterCtors_.push_back(std::bind([] (auto a1, int sr)
+                                             {
+                                                 return std::make_unique<DNSE_EQ>(a1, sr);
+                                             }, std::array<int16_t, 7> { 12, 10, 16, 12, 14, 12, 10 } , std::placeholders::_1));
+            return true;
+        }
+        else if (boost::iequals(filterName, "club"))
+        {
+            filterCtors_.push_back(std::bind([] (auto a1, int sr)
+                                             {
+                                                 return std::make_unique<DNSE_EQ>(a1, sr);
+                                             }, std::array<int16_t, 7> { 19, 17, 9, 7, 15, 19, 18 } , std::placeholders::_1));
+            return true;
+        }
+        else if (boost::iequals(filterName, "rnb"))
+        {
+            filterCtors_.push_back(std::bind([] (auto a1, int sr)
+                                             {
+                                                 return std::make_unique<DNSE_EQ>(a1, sr);
+                                             }, std::array<int16_t, 7> { 13, 19, 15, 13, 13, 15, 11 } , std::placeholders::_1));
             return true;
         }
         else
