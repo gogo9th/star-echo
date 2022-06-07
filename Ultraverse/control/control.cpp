@@ -49,14 +49,16 @@ static const std::wstring selfExeFilepath()
 //
 
 static const wchar_t operaHallMode[] = L"ch,10,10";
+static const wchar_t operaHall2Mode[] = L"eq,13,19,15,13,13,15,11;ch,10,10";
 static const wchar_t liveCafeMode[] = L"ch,13,10";
-static const wchar_t opera2Mode[] = L"eq,13,19,15,13,13,15,11;ch,10,10";
+static const wchar_t rnbMode[] = L"eq,13,19,15,13,13,15,11";
 
 enum
 {
     NI_OperaHall = WM_USER + 10,
+    NI_OperaHall2,
     NI_LiveCafe,
-    NI_Opera2,
+    NI_RnB,
     NI_Disable,
     NI_Enable,
     NI_Setup,
@@ -156,8 +158,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         if (Registry::keyExists(Settings::appPath))
         {
             InsertMenuW(hMenu, NI_OperaHall, MF_BYCOMMAND, NI_OperaHall, L"Opera Hall");
+            InsertMenuW(hMenu, NI_OperaHall2, MF_BYCOMMAND, NI_OperaHall2, L"Opera Hall 2");
             InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe, L"Live Cafe");
-            InsertMenuW(hMenu, NI_Opera2, MF_BYCOMMAND, NI_Opera2, L"Opera 2");
+            InsertMenuW(hMenu, NI_RnB, MF_BYCOMMAND, NI_RnB, L"R&&B");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
             InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Off");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
@@ -173,13 +176,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
                 }
+                else if (current == operaHall2Mode)
+                {
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall2, MF_BYCOMMAND);
+                }
                 else if (current == liveCafeMode)
                 {
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
                 }
-                else if (current == opera2Mode)
+                else if (current == rnbMode)
                 {
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Opera2, MF_BYCOMMAND);
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_RnB, MF_BYCOMMAND);
                 }
                 else
                 {
@@ -236,13 +243,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
                     Settings::setEffect(operaHallMode);
                     break;
+                case NI_OperaHall2:
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall2, MF_BYCOMMAND);
+                    Settings::setEffect(operaHall2Mode);
+                    break;
                 case NI_LiveCafe:
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
                     Settings::setEffect(liveCafeMode);
                     break;
-                case NI_Opera2:
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Opera2, MF_BYCOMMAND);
-                    Settings::setEffect(opera2Mode);
+                case NI_RnB:
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_RnB, MF_BYCOMMAND);
+                    Settings::setEffect(rnbMode);
                     break;
                 case NI_Disable:
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Disable, MF_BYCOMMAND);
@@ -280,7 +291,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
         }
 
-        Settings::setEffect(Settings::effectDisabledString());
+        // turn off on exit
+        if (Registry::keyExists(Settings::appPath))
+        {
+            Settings::setEffect(Settings::effectDisabledString());
+        }
 
         return 0;
     }
