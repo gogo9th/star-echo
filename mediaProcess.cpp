@@ -4,11 +4,11 @@
 #ifdef __cplusplus  
 extern "C" {
 #endif
-    #include <libavformat/avformat.h>
-    #include "libavcodec/avcodec.h"
-    #include <libswresample/swresample.h>
-    #include <libavutil/channel_layout.h>
-    #include <libavutil/audio_fifo.h>
+#include <libavformat/avformat.h>
+#include "libavcodec/avcodec.h"
+#include <libswresample/swresample.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/audio_fifo.h>
 #ifdef __cplusplus  
 }
 #endif
@@ -19,6 +19,7 @@ extern "C" {
 #include "log.hpp"
 #include "utils.h"
 #include "DNSE_CH.h"
+#include "DNSE_EQ.h"
 
 
 av_always_inline std::string av_err2string(int errnum)
@@ -110,7 +111,7 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
         throw MPError("failed to send frame", r);
     }
 
-    AVPacket* packet = av_packet_alloc();
+    AVPacket * packet = av_packet_alloc();
     packet->data = NULL;
     packet->size = 0;
 
@@ -177,7 +178,9 @@ bool FilterFab::addDesc(const std::string & desc)
             return false;
         }
 
-        if (boost::iequals(params[0], "ch"))
+        auto filterName = params.front();
+        params.erase(params.begin());
+        if (boost::iequals(filterName, "ch"))
         {
             int a1 = params.size() > 1 ? std::stoi(params[1]) : 10;
             int a2 = params.size() > 2 ? std::stoi(params[2]) : 10/*9*/;
@@ -185,7 +188,26 @@ bool FilterFab::addDesc(const std::string & desc)
                                              {
                                                  return std::make_unique<DNSE_CH>(a1, a2, sr);
                                              }, a1, a2, std::placeholders::_1));
+            return true;
+        }
+        else if (boost::iequals(filterName, "eq"))
+        {
+            if (params.size() < 7)
+            {
+                err() << "too few parameters for EQ filter";
+                return false;
+            }
 
+            std::array<int16_t, 7> gains;
+            int i = 0;
+            for (auto & param : params)
+            {
+                gains[i++] = std::stoi(param);
+            }
+            filterCtors_.push_back(std::bind([] (auto a1, int sr)
+                                             {
+                                                 return std::make_unique<DNSE_EQ>(a1, sr);
+                                             }, gains, std::placeholders::_1));
             return true;
         }
         else
@@ -255,16 +277,16 @@ void MediaProcess::process(const FileItem & item) const
     int r;
 
     scoped_ptr<AVFormatContext> avfmt_in([&item] ()
-		  {	// open the input music file
-				AVFormatContext * ctx = nullptr;
-				int r = avformat_open_input(&ctx, item.input.string().c_str(), NULL, NULL);
-				if (r != 0) throw MPError("failed to open input media", r);
-				return ctx;
-		  }(),
-		  [] (auto * d)
-		  {
-				avformat_close_input(&d);/* avformat_free_context(d); */
-		  });
+                                         {	// open the input music file
+                                             AVFormatContext * ctx = nullptr;
+                                             int r = avformat_open_input(&ctx, item.input.string().c_str(), NULL, NULL);
+                                             if (r != 0) throw MPError("failed to open input media", r);
+                                             return ctx;
+                                         }(),
+                                             [] (auto * d)
+                                         {
+                                             avformat_close_input(&d);/* avformat_free_context(d); */
+                                         });
 
     // ensure a stream exists in the input music file
     if ((r = avformat_find_stream_info(avfmt_in, NULL)) < 0)
@@ -322,9 +344,9 @@ void MediaProcess::process(const FileItem & item) const
             || (audioCodecIn->sample_rate != 32000 && audioCodecIn->sample_rate != 44100 && audioCodecIn->sample_rate != 48000))
         {   // Arguments: (swr_ctx, out, out, out, in, in, in, log_offset, log_ctx)
             swr_in.reset(swr_alloc_set_opts(NULL,
-               AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, AV_SAMPLE_FMT_S16P, filterSampleRate,
-					audioCodecIn->channel_layout, audioCodecIn->sample_fmt, audioCodecIn->sample_rate,
-               0, NULL));
+                                            AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, AV_SAMPLE_FMT_S16P, filterSampleRate,
+                                            audioCodecIn->channel_layout, audioCodecIn->sample_fmt, audioCodecIn->sample_rate,
+                                            0, NULL));
             if (!swr_in) throw MPError("swr_alloc_set_opts failed");
 
             if ((r = swr_init(swr_in)) != 0) throw MPError("input converter init failed", r);
@@ -334,19 +356,19 @@ void MediaProcess::process(const FileItem & item) const
     // *** output format ctx **
 
     scoped_ptr<AVFormatContext> avfmt_out([&item, &tempOut] ()
-		{
-			 int r;
-			 AVFormatContext * ctx;
-			 if ((r = avformat_alloc_output_context2(&ctx, 0, 0, item.output.string().c_str())) < 0)
-				  throw MPError("failed to allocate output format context", r);
-			 return ctx;
-		}(),
-		[] (auto * d)
-		{
-			 avio_closep(&d->pb);
-			 avformat_free_context(d);
-		}
-	);
+                                          {
+                                              int r;
+                                              AVFormatContext * ctx;
+                                              if ((r = avformat_alloc_output_context2(&ctx, 0, 0, item.output.string().c_str())) < 0)
+                                                  throw MPError("failed to allocate output format context", r);
+                                              return ctx;
+                                          }(),
+                                              [] (auto * d)
+                                          {
+                                              avio_closep(&d->pb);
+                                              avformat_free_context(d);
+                                          }
+                                          );
 
     if ((r = avio_open(&avfmt_out->pb, tempOut.string().c_str(), AVIO_FLAG_WRITE)) < 0)
         throw MPError("failed to open output media", r);
@@ -474,8 +496,8 @@ void MediaProcess::process(const FileItem & item) const
     bool input_eof = false;
     while (!input_eof)
     {
-        {   
-            AVPacket* packet = av_packet_alloc();
+        {
+            AVPacket * packet = av_packet_alloc();
             packet->data = NULL;
             packet->size = 0;
 
@@ -565,7 +587,7 @@ void MediaProcess::process(const FileItem & item) const
 
                 // An upper bound on the number of samples that the next swr_convert will output
                 auto swrOutSamples = swr_get_out_samples(swr_in, nb_samples);
-                
+
                 // Dynamically increase the lb, rb vector size to be the maximum number of samples 
                 //  across all decoded raw frames of the input music file
                 if (lb.size() < swrOutSamples) lb.resize(swrOutSamples);
@@ -596,18 +618,18 @@ void MediaProcess::process(const FileItem & item) const
             // convert can produce no samples ... if the input is like 1 sample ... uhhh 
             if (nb_samples > 0)
             {
-                
+
                 // These are for output data (after filter-processing)
                 if (lbOut.size() < nb_samples) lbOut.resize(nb_samples);
                 if (rbOut.size() < nb_samples) rbOut.resize(nb_samples);
 
                 // Our prototype had only 1 filter: CH (Cathedral)
-                for (auto & filter : filters)
+                for (auto filter = filters.begin(); filter != filters.end(); ++filter)
                 {
-                    filter->filter(lbIn, rbIn, lbOut.data(), rbOut.data(), nb_samples);
+                    (*filter)->filter(lbIn, rbIn, lbOut.data(), rbOut.data(), nb_samples);
 
                     // Reuse the same lb, rb, lbOut, rbOut buffers when processing through multiple filters
-                    if (filters.size() > 1)
+                    if (filter + 1 != filters.end())
                     {
                         lb.swap(lbOut);
                         rb.swap(rbOut);

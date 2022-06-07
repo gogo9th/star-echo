@@ -29,3 +29,11 @@ inline std::vector<std::basic_string<char_type>> stringSplit(const std::basic_st
 {
     return stringSplit(str, std::basic_string_view<char_type>(delimiter, size - 1));
 }
+
+//
+
+template<typename T, int size>
+static const void copy(T(&dst)[size], const T(&src)[size])
+{
+    std::copy(src, src + std::size(src), dst);
+}

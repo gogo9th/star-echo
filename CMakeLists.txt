@@ -34,7 +34,11 @@ if (UNIX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif (UNIX)
 
-add_executable(${PROJECT_NAME} "q2cathedral.cpp" "q2cathedral.h" "log.hpp"  "threaded.h"  "filter.h" "DNSE_CH.h" "DNSE_CH.cpp" "mediaProcess.h" "mediaProcess.cpp" "utils.h" )
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  string(REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+endif()
+
+add_executable(${PROJECT_NAME} "q2cathedral.cpp" "q2cathedral.h" "log.hpp"  "threaded.h"  "filter.h" "DNSE_CH.h" "DNSE_CH.cpp" "mediaProcess.h" "mediaProcess.cpp" "utils.h"  "DNSE_EQ.h" "DNSE_EQ.cpp")
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} PkgConfig::LIBAV)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

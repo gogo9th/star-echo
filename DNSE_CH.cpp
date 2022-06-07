@@ -7,6 +7,7 @@
 
 #include "q2cathedral.h"
 #include "DNSE_CH.h"
+#include "utils.h"
 
 static const uint8_t preset_filters[] = {
     0x73, 0x0a, 0x00, 0x00, 0x21, 0x08, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0xf7, 0xf0, 0xff, 0xff,
@@ -439,13 +440,6 @@ struct DNSE_CH::PresetGain
     int32_t r_gain;
 };
 
-//
-
-template<typename T, int size>
-static const void copy(T(&d)[size], const T(&s)[size])
-{
-    std::copy(s, s + std::size(s), d);
-}
 
 //
 
