@@ -180,10 +180,11 @@ bool FilterFab::addDesc(const std::string & desc)
 
         auto filterName = params.front();
         params.erase(params.begin());
+
         if (boost::iequals(filterName, "ch"))
         {
-            int a1 = params.size() > 1 ? std::stoi(params[1]) : 10;
-            int a2 = params.size() > 2 ? std::stoi(params[2]) : 10/*9*/;
+            int a1 = params.size() > 0 ? std::stoi(params[0]) : 10;
+            int a2 = params.size() > 1 ? std::stoi(params[1]) : 10/*9*/;
             filterCtors_.push_back(std::bind([] (int a1, int a2, int sr) 
                                              {
                                                  return std::make_unique<DNSE_CH>(a1, a2, sr);
