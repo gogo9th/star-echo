@@ -10,6 +10,9 @@
     <ClCompile Include="..\..\DNSE_CH.cpp">
       <Filter>Q2</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\DNSE_EQ.cpp">
+      <Filter>Q2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Q2APO.h" />
@@ -22,6 +25,9 @@
     </ClInclude>
     <ClInclude Include="log.hpp" />
     <ClInclude Include="..\..\DNSE_CH.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DNSE_EQ.h">
       <Filter>Q2</Filter>
     </ClInclude>
   </ItemGroup>

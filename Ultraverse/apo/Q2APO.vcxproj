@@ -178,6 +178,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\DNSE_EQ.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="dllMain.cpp" />
     <ClCompile Include="Q2APO.cpp" />
     <ClCompile Include="Q2APO_i.c">
@@ -195,6 +201,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\DNSE_CH.h" />
+    <ClInclude Include="..\..\DNSE_EQ.h" />
     <ClInclude Include="log.hpp" />
     <ClInclude Include="Q2APO.h" />
     <ClInclude Include="Q2APO_h.h" />

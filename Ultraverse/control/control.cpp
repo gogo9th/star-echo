@@ -50,11 +50,13 @@ static const std::wstring selfExeFilepath()
 
 static const wchar_t operaHallMode[] = L"ch,10,10";
 static const wchar_t liveCafeMode[] = L"ch,13,10";
+static const wchar_t opera2Mode[] = L"eq,13,19,15,13,13,15,11;ch,10,10";
 
 enum
 {
     NI_OperaHall = WM_USER + 10,
     NI_LiveCafe,
+    NI_Opera2,
     NI_Disable,
     NI_Enable,
     NI_Setup,
@@ -155,8 +157,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             InsertMenuW(hMenu, NI_OperaHall, MF_BYCOMMAND, NI_OperaHall, L"Opera Hall");
             InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe, L"Live Cafe");
+            InsertMenuW(hMenu, NI_Opera2, MF_BYCOMMAND, NI_Opera2, L"Opera 2");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
-            InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Disable");
+            InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Off");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
 
             auto current = Settings::currentEffect();
@@ -173,6 +176,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 else if (current == liveCafeMode)
                 {
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
+                }
+                else if (current == opera2Mode)
+                {
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Opera2, MF_BYCOMMAND);
                 }
                 else
                 {
@@ -232,6 +239,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 case NI_LiveCafe:
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
                     Settings::setEffect(liveCafeMode);
+                    break;
+                case NI_Opera2:
+                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Opera2, MF_BYCOMMAND);
+                    Settings::setEffect(opera2Mode);
                     break;
                 case NI_Disable:
                     CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Disable, MF_BYCOMMAND);

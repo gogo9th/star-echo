@@ -11,7 +11,7 @@
 #include "common/scopedResource.h"
 
 
-class DNSE_CH;
+class Filter;
 
 #pragma AVRT_CONST_BEGIN
 
@@ -84,17 +84,16 @@ private:
     bool checkFormat(const UNCOMPRESSEDAUDIOFORMAT & pRequestedFormat);
     void settingsMonitor();
     void parseSettings(const std::wstring & settings);
-    void createDnse();
+    void createFilters(const std::wstring & settings);
 
     bool    errorOnce_ = false;
 
-    std::recursive_mutex        dnseSettingMtx_;
-    int                         chRoomSize_ = 0;
-    int                         chGain_ = 0;
+    std::recursive_mutex    filterSettingMtx_;
+    std::wstring            filterSettings_;
 
-    std::mutex                  dnseMtx_;
-    std::unique_ptr<DNSE_CH>    dnse_;
-    float                       adjustGain_ = 1;
+    std::mutex                              filtersMtx_;
+    std::vector<std::unique_ptr<Filter>>    filters_;
+    float   adjustGain_ = 1;
 
     bool lockedIsPCM_ = false;
     bool lockedSampleRate_ = 0;

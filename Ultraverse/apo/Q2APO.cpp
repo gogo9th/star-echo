@@ -3,6 +3,7 @@
 #include <audioengineextensionapo.h>
 
 #include "DNSE_CH.h"
+#include "DNSE_EQ.h"
 #include "Q2APO.h"
 #include "log.hpp"
 
@@ -133,7 +134,7 @@ Q2APOMFX::Q2APOMFX()
 {
     dbg() << "Creating";
 
-    parseSettings(Settings::currentEffect());
+    filterSettings_ = Settings::currentEffect();
 }
 
 Q2APOMFX::~Q2APOMFX()
@@ -281,6 +282,7 @@ STDMETHODIMP_(HRESULT __stdcall) Q2APOMFX::GetInputChannelCount(UINT32 * pu32Cha
     return S_OK;
 }
 
+
 STDMETHODIMP Q2APOMFX::LockForProcess(UINT32 u32NumInputConnections, APO_CONNECTION_DESCRIPTOR ** ppInputConnections,
                                       UINT32 u32NumOutputConnections, APO_CONNECTION_DESCRIPTOR ** ppOutputConnections)
 {
@@ -325,7 +327,10 @@ STDMETHODIMP Q2APOMFX::LockForProcess(UINT32 u32NumInputConnections, APO_CONNECT
     lockedIsPCM_ = inFormat.guidFormatType == KSDATAFORMAT_SUBTYPE_PCM;
     lockedSampleRate_ = (int)inFormat.fFramesPerSecond;
 
-    createDnse();
+    {
+        std::lock_guard lk(filterSettingMtx_);
+        createFilters(filterSettings_);
+    }
 
     return S_OK;
 }
@@ -339,8 +344,8 @@ STDMETHODIMP Q2APOMFX::UnlockForProcess()
     lockedSampleRate_ = 0;
 
     {
-        std::lock_guard lk(dnseMtx_);
-        dnse_.reset();
+        std::lock_guard lk(filtersMtx_);
+        filters_.clear();
     }
 
     return CBaseAudioProcessingObject::UnlockForProcess();
@@ -437,7 +442,7 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
     auto & iConn = ppInputConnections[0];
     auto & oConn = ppOutputConnections[0];
 
-    std::lock_guard lk(dnseMtx_);
+    std::lock_guard lk(filtersMtx_);
 
     switch (iConn->u32BufferFlags)
     {
@@ -449,7 +454,7 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                 auto inputFrames = reinterpret_cast<int16_t *>(iConn->pBuffer);
                 auto outputFrames = reinterpret_cast<int16_t *>(oConn->pBuffer);
 
-                if (dnse_)
+                if (!filters_.empty())
                 {
                     for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
                     {
@@ -457,7 +462,12 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                         auto r = inputFrames[2 * i + 1];
 
                         int16_t ol, or ;
-                        dnse_->filter(l, r, &ol, &or);
+                        for (auto & filter : filters_)
+                        {
+                            filter->filter(l, r, &ol, &or);
+                            l = ol;
+                            r = or;
+                        }
                         outputFrames[2 * i] = int16_t(std::round(float(ol) * adjustGain_));
                         outputFrames[2 * i + 1] = int16_t(std::round(float(or ) * adjustGain_));
                     }
@@ -472,7 +482,7 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                 auto inputFrames = reinterpret_cast<float *>(iConn->pBuffer);
                 auto outputFrames = reinterpret_cast<float *>(oConn->pBuffer);
 
-                if (dnse_)
+                if (!filters_.empty())
                 {
                     for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
                     {
@@ -480,7 +490,12 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                         auto r = int(inputFrames[2 * i + 1] * 0x7FFF);
 
                         int16_t ol, or;
-                        dnse_->filter(l, r, &ol, &or);
+                        for (auto & filter : filters_)
+                        {
+                            filter->filter(l, r, &ol, &or);
+                            l = ol;
+                            r = or ;
+                        }
 
                         outputFrames[2 * i] = (float(ol) / 0x7FFF) * adjustGain_;
                         outputFrames[2 * i + 1] = (float(or) / 0x7FFF) * adjustGain_;
@@ -560,72 +575,92 @@ STDMETHODIMP Q2APOMFX::GetFormatRepresentation(UINT nFormat, LPWSTR * ppwstrForm
     return S_OK;
 }
 
-
-void Q2APOMFX::parseSettings(const std::wstring & settings)
+void Q2APOMFX::createFilters(const std::wstring & settings)
 {
     msg() << "Setup: " << settings;
 
-    auto params = stringSplit(settings, L",");
-
     if (settings == Settings::effectDisabledString()
-        || params.empty())
+        || settings.empty())
     {
-        chRoomSize_ = 0;
-        chGain_ = 0;
+        std::lock_guard lk(filtersMtx_);
+        filters_.clear();
         return;
     }
 
-    if (params[0] == L"ch")
+    std::vector<std::unique_ptr<Filter>> newFilters;
+
+    auto filters = stringSplit(settings, L";");
+    for (auto & setting : filters)
     {
-        chRoomSize_ = params.size() > 1 ? std::stoi(params[1]) : 0;
-        chGain_ = params.size() > 2 ? std::stoi(params[2]) : 0;
+        auto params = stringSplit(setting, L",");
+
+        if (params[0] == L"ch")
+        {
+            static const float adjustGains[13][11] = {
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },     // RS 1
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.35f }, // RS 10
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.562f },
+            };
+
+            auto chRoomSize = params.size() > 1 ? std::stoi(params[1]) : 0;
+            auto chGain = params.size() > 2 ? std::stoi(params[2]) : 0;
+
+            if (chRoomSize >= 1 && chRoomSize <= 13
+                && chGain >= 0 && chGain <= 11
+                && lockedSampleRate_ != 0)
+            {
+                adjustGain_ = adjustGains[chRoomSize - 1][chGain];
+                dbg() << "CH adjust gain: " << adjustGain_;
+
+                newFilters.push_back(std::make_unique<DNSE_CH>(chRoomSize, chGain, lockedSampleRate_));
+            }
+            else if (chRoomSize != 0 || chGain != 0)
+            {
+                err() << "Invalig CH filter settings: " << chRoomSize << ", " << chGain;
+            }
+        }
+        else if (params[0] == L"eq")
+        {
+            params.erase(params.begin());
+
+            if (params.size() >= 7)
+            {
+                std::array<int16_t, 7> gains;
+
+                int i = 0;
+                for (auto & param : params)
+                {
+                    gains[i++] = std::stoi(param);
+                }
+
+                adjustGain_ = 1;
+
+                newFilters.push_back(std::make_unique<DNSE_EQ>(gains, lockedSampleRate_));
+            }
+            else
+            {
+                err() << "Too few parameters for EQ filter";
+            }
+        }
+        else
+        {
+            err() << "Unsupported filter setting " << settings;
+        }
     }
-    else
-    {
-        err() << "Unsupported filter setting " << settings;
-        chRoomSize_ = 0;
-        chGain_ = 0;
-    }
-}
-
-void Q2APOMFX::createDnse()
-{
-    static const float adjustGains[13][11] = {
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },     // RS 1
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.203f }, // RS 10
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.562f },
-    };
-
-    std::lock_guard lk(dnseSettingMtx_);
-
-    std::unique_ptr<DNSE_CH> newFilter;
-    if (chRoomSize_ >= 1 && chRoomSize_ <= 13
-        && chGain_ >= 0 && chGain_ <= 11
-        && lockedSampleRate_ != 0)
-    {
-        adjustGain_ = adjustGains[chRoomSize_ - 1][chGain_];
-        dbg() << "Adjust gain: " << adjustGain_;
-
-        newFilter = std::make_unique<DNSE_CH>(chRoomSize_, chGain_, lockedSampleRate_);
-    }
-    else if (chRoomSize_ != 0 || chGain_ != 0)
-    {
-        err() << "Invalig filter settings: " << chRoomSize_ << ", " << chGain_;
-    }
 
     {
-        std::lock_guard lk(dnseMtx_);
-        dnse_.swap(newFilter);
+        std::lock_guard lk(filtersMtx_);
+        filters_.swap(newFilters);
     }
 }
 
@@ -686,9 +721,9 @@ void Q2APOMFX::settingsMonitor()
                     settingCache_ = newSetting;
 
                     {
-                        std::lock_guard lk(dnseSettingMtx_);
-                        parseSettings(newSetting);
-                        createDnse();
+                        std::lock_guard lk(filterSettingMtx_);
+                        filterSettings_ = newSetting;
+                        createFilters(filterSettings_);
                     }
 
                     break;
