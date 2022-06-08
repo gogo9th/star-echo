@@ -94,7 +94,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         if (isAdmin)
         {
-            if (wcscmp(lpCmdLine, L"installDefault") == 0)
+            if (wcscmp(lpCmdLine, L"installAll") == 0)
+            {
+                auto devices = getPlaybackDevices();
+                for (auto & device : devices)
+                {
+                    if (!device->apoMfxInstalled)
+                    {
+                        device->installApo();
+                        device->enableEnhancements();
+                    }
+                }
+                restartAudioService();
+                return 0;
+            }
+            else if (wcscmp(lpCmdLine, L"installDefault") == 0)
             {
                 auto defaultDev = getDefaultMMDevice(eRender);
                 auto devInfo = std::make_shared<MMDeviceInfo>(defaultDev);

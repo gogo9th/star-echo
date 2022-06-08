@@ -3,7 +3,7 @@
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include $(sys.CURRENTDIR)\vars.wxi?>
 
-  <?define ProductVersion="1.0.4.0"?>
+  <?define ProductVersion="1.0.5.0"?>
   
   <Product Id="*"
            Name="Ultraverse"
@@ -110,7 +110,7 @@
     </ComponentGroup>
 
     <CustomAction Id="Install" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
-              ExeCommand="[#controlApp] installDefault" />
+              ExeCommand="[#controlApp] installAll" />
 
     <CustomAction Id="Uninstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
               ExeCommand="[#controlApp] uninstall" />
