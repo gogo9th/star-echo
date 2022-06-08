@@ -28,5 +28,6 @@ using namespace std::literals::string_view_literals;
 #include "common/error.h"
 
 HINSTANCE hInstance();
+const wchar_t * windowNameW();
 const wchar_t * appNameW();
 const char * appName();

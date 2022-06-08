@@ -3,7 +3,7 @@
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include $(sys.CURRENTDIR)\vars.wxi?>
 
-  <?define ProductVersion="1.0.5.0"?>
+  <?define ProductVersion="1.0.6.0"?>
 
   <Product Id="*"
            Name="Ultraverse"
@@ -39,6 +39,8 @@
 
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <util:CloseApplication CloseMessage="yes" Target="ucontrol.exe" Description="Please close [ProductName] before continuing." RebootPrompt="no"/>
 
   </Product>
 
@@ -122,13 +124,10 @@
     <Property Id="WixShellExecTarget" Value="[#controlApp]" />
     <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
     
-    
-    <util:CloseApplication CloseMessage="yes" Target="control.exe" Description="Please close control.exe before continuing.">Installed</util:CloseApplication>
-
     <InstallExecuteSequence>
       <Custom Action='Install' After='InstallFiles'>NOT REMOVE</Custom>
       <Custom Action='Uninstall' After='InstallInitialize'>Installed AND (REMOVE = "ALL")</Custom>
-      <!-->Custom Action="WixCloseApplication" Before="InstallInitialize"></Custom-->
+      <!--Custom Action="WixCloseApplications" Before="InstallValidate"></Custom-->
     </InstallExecuteSequence>
 
   </Fragment>

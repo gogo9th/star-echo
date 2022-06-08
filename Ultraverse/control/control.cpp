@@ -27,6 +27,12 @@ HINSTANCE hInstance()
     return hInstance_;
 }
 
+const wchar_t * windowNameW()
+{
+    // should differ from installer caption to be able to find app window
+    return L"Ultraverse Control";
+}
+
 const wchar_t * appNameW()
 {
     return L"Ultraverse";
@@ -142,7 +148,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
         bool showConfig = false;
-        auto wPreviousInstance = FindWindowW(nullptr, appNameW());
+        auto wPreviousInstance = FindWindowW(nullptr, windowNameW());
 
         if (wcscmp(lpCmdLine, L"setup") == 0) 
         {
