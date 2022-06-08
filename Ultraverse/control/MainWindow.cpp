@@ -41,7 +41,7 @@ MainWindow::~MainWindow()
 void MainWindow::create()
 {
     hWnd_ = CreateDialogParamW(hInstance(), MAKEINTRESOURCEW(IDR_MAINFRAME), GetDesktopWindow(), dlgProc_, 0);
-    SetWindowTextW(hWnd_, appNameW());
+    SetWindowTextW(hWnd_, windowNameW());
 
     deviceList_ = GetDlgItem(hWnd_, IDC_DEVICES);
     btnApply_ = GetDlgItem(hWnd_, IDC_BTNAPPLY);
