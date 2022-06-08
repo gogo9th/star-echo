@@ -30,7 +30,7 @@
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
     <!--Property Id="ARPURLINFOABOUT" Value="https://" /-->
     <!--Property Id="ARPCOMMENTS" Value="Comments" /-->
-    <!--WixVariable Id="WixUILicenseRtf" Value="license.rtf" /-->
+    <WixVariable Id="WixUILicenseRtf" Value="eula.rtf" />
     <WixVariable Id="WixUIBannerBmp" Value="BannerBmp.bmp" />
     <WixVariable Id="WixUIDialogBmp" Value="DialogBmp.bmp" />
 
