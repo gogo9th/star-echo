@@ -23,10 +23,13 @@
 
     <UI>
       <UIRef Id="WixUI_InstallDir"/>
+
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
     </UI>
 
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Ultraverse application after install" />
+    
     <Icon Id="AppIcon" SourceFile="$(var.control.ProjectDir)\control.ico"/>
-
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
     <!--Property Id="ARPURLINFOABOUT" Value="https://" /-->
     <!--Property Id="ARPCOMMENTS" Value="Comments" /-->
@@ -116,6 +119,10 @@
     <CustomAction Id="Uninstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
               ExeCommand="[#controlApp] uninstall" />
 
+    <Property Id="WixShellExecTarget" Value="[#controlApp]" />
+    <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
+    
+    
     <util:CloseApplication CloseMessage="yes" Target="control.exe" Description="Please close control.exe before continuing.">Installed</util:CloseApplication>
 
     <InstallExecuteSequence>
