@@ -93,7 +93,7 @@ private:
 
     std::mutex                              filtersMtx_;
     std::vector<std::unique_ptr<Filter>>    filters_;
-    float   adjustGain_ = 1;
+    float                                   adjustGain_ = 1;
 
     bool lockedIsPCM_ = false;
     bool lockedSampleRate_ = 0;

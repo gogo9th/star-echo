@@ -588,6 +588,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
     }
 
     std::vector<std::unique_ptr<Filter>> newFilters;
+    float adjustGain = 1;
 
     auto filters = stringSplit(settings, L";");
     for (auto & setting : filters)
@@ -609,7 +610,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.35f }, // RS 10
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
                 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.562f },
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.562f /*1.777*/},
             };
 
             auto chRoomSize = params.size() > 1 ? std::stoi(params[1]) : 0;
@@ -619,8 +620,9 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                 && chGain >= 0 && chGain <= 11
                 && lockedSampleRate_ != 0)
             {
-                adjustGain_ = adjustGains[chRoomSize - 1][chGain];
-                dbg() << "CH adjust gain: " << adjustGain_;
+                auto chAdjustGain = adjustGains[chRoomSize - 1][chGain];
+                dbg() << "CH adjust gain: " << chAdjustGain;
+                adjustGain *= chAdjustGain;
 
                 newFilters.push_back(std::make_unique<DNSE_CH>(chRoomSize, chGain, lockedSampleRate_));
             }
@@ -643,7 +645,20 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                     gains[i++] = std::stoi(param);
                 }
 
-                adjustGain_ = 1;
+                float eqAdjustGain = 1;
+                if (gains == std::array<int16_t, 7>{13, 19, 15, 13, 13, 15, 11 /*rnb*/}
+                    || gains == std::array<int16_t, 7>{19, 17, 9, 7, 15, 19, 18} /*club*/)
+                {
+                    eqAdjustGain = 0.76f;
+                }
+                else if (gains == std::array<int16_t, 7>{12, 10, 16, 12, 14, 12, 10 } /*ballad*/)
+                {
+                    
+                    eqAdjustGain = 0.90f;
+                }
+
+                dbg() << "EQ adjust gain: " << eqAdjustGain;
+                adjustGain *= eqAdjustGain;
 
                 newFilters.push_back(std::make_unique<DNSE_EQ>(gains, lockedSampleRate_));
             }
@@ -661,6 +676,8 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
     {
         std::lock_guard lk(filtersMtx_);
         filters_.swap(newFilters);
+        adjustGain_ = adjustGain;
+        dbg() << "Total adjust gain: " << adjustGain_;
     }
 }
 
