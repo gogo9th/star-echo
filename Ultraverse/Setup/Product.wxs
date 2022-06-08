@@ -4,7 +4,7 @@
   <?include $(sys.CURRENTDIR)\vars.wxi?>
 
   <?define ProductVersion="1.0.5.0"?>
-  
+
   <Product Id="*"
            Name="Ultraverse"
            Language="1033"
@@ -31,7 +31,8 @@
     <!--Property Id="ARPURLINFOABOUT" Value="https://" /-->
     <!--Property Id="ARPCOMMENTS" Value="Comments" /-->
     <!--WixVariable Id="WixUILicenseRtf" Value="license.rtf" /-->
-    <!--WixVariable Id="WixUIBannerBmp" Value="WixUIBanner.bmp" /-->
+    <WixVariable Id="WixUIBannerBmp" Value="BannerBmp.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="DialogBmp.bmp" />
 
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
@@ -106,7 +107,7 @@
           <RegistryValue Name="Ultraverse" Value="[#controlApp]" Type="string" Action="write"/>
         </RegistryKey>
       </Component>
-      
+
     </ComponentGroup>
 
     <CustomAction Id="Install" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
