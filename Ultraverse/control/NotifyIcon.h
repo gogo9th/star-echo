@@ -20,6 +20,7 @@ public:
 
 private:
     static constexpr int  StatusCallbackMessage = WM_APP + 1;
+    int  TaskbarRestartMessage = 0;
 
     static ATOM registerClass();
 

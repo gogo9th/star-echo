@@ -20,20 +20,22 @@ static LRESULT WINAPI miniWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 NotifyIcon::NotifyIcon(int iconResId, HWND hWnd)
     : icon_(iconResId)
     , hWnd_(hWnd)
+    , TaskbarRestartMessage(RegisterWindowMessageW(L"TaskbarCreated"))
 {
     // initialize once
     static ATOM atom = registerClass();
     if (atom == NULL) throw Error::gle("Failed to register miniwindow class");
 
-    hMiniWnd_ = CreateWindowExW(0, MAKEINTATOM(atom), L"", WS_OVERLAPPEDWINDOW,
+    hMiniWnd_ = CreateWindowExW(0, MAKEINTATOM(atom), L"", WS_OVERLAPPED,
                                 CW_USEDEFAULT, 0,
                                 CW_USEDEFAULT, 0,
-                                HWND_MESSAGE,
+                                nullptr,// HWND_MESSAGE, Message windows (HWND_MESSAGE)  will not receive the "TaskbarCreated" message.
                                 nullptr,
                                 hInstance(),
                                 nullptr);
     if (hMiniWnd_ == NULL) throw Error::gle("Failed to create miniwindow");
     miniWindows_[hMiniWnd_] = this;
+
     setIcon(icon_, true);
 }
 
@@ -104,8 +106,15 @@ LRESULT NotifyIcon::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
 
         default:
-            return DefWindowProc(hMiniWnd_, uMsg, wParam, lParam);
-            break;
+            if (uMsg == TaskbarRestartMessage)
+            {
+                setIcon(icon_, true);
+                break;
+            }
+            else
+            {
+                return DefWindowProc(hMiniWnd_, uMsg, wParam, lParam);
+            }
     }
     return 0;
 }
