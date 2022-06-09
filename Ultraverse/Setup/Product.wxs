@@ -3,7 +3,7 @@
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include $(sys.CURRENTDIR)\vars.wxi?>
 
-  <?define ProductVersion="1.0.6.0"?>
+  <?define ProductVersion="1.0.7.0"?>
 
   <Product Id="*"
            Name="Ultraverse"
@@ -126,7 +126,7 @@
     <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
     
     <InstallExecuteSequence>
-      <Custom Action='Install' After='InstallFiles'>NOT REMOVE</Custom>
+      <Custom Action='Install' After='PublishProduct'>NOT REMOVE</Custom>
       <Custom Action='Uninstall' After='InstallInitialize'>Installed AND (REMOVE = "ALL")</Custom>
       <!--Custom Action="WixCloseApplications" Before="InstallValidate"></Custom-->
     </InstallExecuteSequence>
