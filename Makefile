@@ -1,4 +1,4 @@
-SRC :=  mediaProcess.cpp q2cathedral.cpp DNSE_CH.cpp
+SRC :=  mediaProcess.cpp q2cathedral.cpp DNSE_CH.cpp DNSE_EQ.cpp
 
 CFLAGS = -O2 -g -pthread -std=c++17
 
