@@ -111,9 +111,7 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
         throw MPError("failed to send frame", r);
     }
 
-    AVPacket * packet = av_packet_alloc();
-    packet->data = NULL;
-    packet->size = 0;
+    scoped_ptr<AVPacket> packet(av_packet_alloc(), [] (auto * d) { av_packet_free(&d); });
 
     if ((r = avcodec_receive_packet(avcodec_out, packet)) == 0)
     {
@@ -135,7 +133,6 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
         }
         else
         {
-            av_packet_unref(packet);
             throw MPError("failed to write frame", r);
         }
     }
@@ -146,11 +143,8 @@ static int encodeFrame(AVFrame * frame, AVFormatContext * avfmt_out, AVCodecCont
     }
     else if (r != AVERROR_EOF)
     {
-        av_packet_unref(packet);
         throw MPError("failed to receive an output packet", r);
     }
-
-    av_packet_unref(packet);
 
     return r;
 }
@@ -288,11 +282,6 @@ void MediaProcess::process(const FileItem & item) const
     //#if defined(_DEBUG)
     //    msg() << item.output.string();
     //#endif // defined(_DEBUG)
-
-    if (std::filesystem::exists(item.output))
-    {
-        throw MPError("already exists, skipping", false);
-    }
 
     std::filesystem::create_directories(item.output.parent_path());
 
@@ -495,8 +484,7 @@ void MediaProcess::process(const FileItem & item) const
 
     // *** process ***
 
-    scoped_ptr<AVFrame> frame_in(av_frame_alloc(),
-                                 [] (auto * d) { av_frame_free(&d); });
+    scoped_ptr<AVFrame> frame_in(av_frame_alloc(), [] (auto * d) { av_frame_free(&d); });
     if (!frame_in) throw MPError("failed to allocate frame");
 
 
@@ -522,9 +510,7 @@ void MediaProcess::process(const FileItem & item) const
     while (!input_eof)
     {
         {
-            AVPacket * packet = av_packet_alloc();
-            packet->data = NULL;
-            packet->size = 0;
+            scoped_ptr<AVPacket> packet(av_packet_alloc(), [] (auto * d) { av_packet_free(&d); });
 
         readFrame:
             // Read an encoded frame from the input music file
@@ -548,7 +534,6 @@ void MediaProcess::process(const FileItem & item) const
                 else if (audioStream->index == packet->stream_index)
                 {
                     r = avcodec_send_packet(audioCodecIn, packet);
-                    av_packet_unref(packet);
                     if (r == 0)
                     {   // <TIP: get a raw frame from the input music file with a proper codec-decoding>
                         // <FLOW: AVFormatContext (avfmt_in) -> AVPacket (packet) -> AVCodexContext (audioCodecIn) 
@@ -584,7 +569,6 @@ void MediaProcess::process(const FileItem & item) const
                 else
                 {
                     // unknown stream index
-                    av_packet_unref(packet);
                     continue;
                 }
             }

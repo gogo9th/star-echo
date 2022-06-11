@@ -526,6 +526,15 @@ public:
     {
         copy(gains_, gains);
         copy(er_delays_, er_delays);
+        for (auto & d : er_delays_)
+        {
+            // workaround firmware bug
+            assert(d <= delay);
+            if (d >= delay)
+            {
+                d -= delay;
+            }
+        }
     }
 
     int32_t filter(int32_t in) override
@@ -565,7 +574,7 @@ public:
         , absorb_(absorb)
         , out_shift_(out_shift)
     {
-        assert(out_shift_ > 0);
+        assert(out_shift_ > 0 && out_shift <= delay);
     }
 
     int32_t last()
@@ -702,7 +711,7 @@ DNSE_CH::DNSE_CH(int roomSize, int gain, int sampleRate)
 
     auto vbr1_delay = ((0xa3d * presetFilter->vbr1_delay) >> 12);
     ch1_ = std::make_unique<FilterChain>();
-    ch1_->add(std::make_unique<APFilter>(std::min(presetFilter->ap3_delay, 1933), presetFilter->ap3_gain));
+    ch1_->add(std::make_unique<APFilter>(std::min(presetFilter->ap3_delay, 1993), presetFilter->ap3_gain));
     ch1_->add(std::make_unique<APFilter>(std::min(presetFilter->ap4_delay, 2843), presetFilter->ap4_gain));
     ch1_->add(std::make_unique<APFilter>(std::min(presetFilter->ap5_delay, 2053), presetFilter->ap5_gain));
     ch1_->add(std::make_unique<VbrFilter>(std::min(vbr1_delay, 2881), presetFilter->vbr1_gain, 0x14ce, 0x102));
@@ -748,8 +757,8 @@ void DNSE_CH::filter(int16_t l, const int16_t r,
     auto r1 = ((dr1 * presetGain_->r_gain + ap1 * presetGain_->er_gain) >> 12);
     auto r2 = ((dr2 * presetGain_->r_gain + ap2 * presetGain_->er_gain) >> 12);
 
-    r1 = (r1 + l) >> 1;
-    r2 = (r2 + r) >> 1;
+    r1 = (r1 + l);
+    r2 = (r2 + r);
 
     r1 = std::min(0x7FFF, std::max(-0x8000, r1));
     r2 = std::min(0x7FFF, std::max(-0x8000, r2));

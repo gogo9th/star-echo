@@ -172,22 +172,13 @@ STDMETHODIMP Q2APOMFX::Initialize(UINT32 cbDataSize, BYTE * pbyData)
     if (cbDataSize == sizeof(APOInitSystemEffects))
     {
         dbg() << "Init APOInitSystemEffects L " << m_bIsLocked;
-
-        APOInitSystemEffects * eff = (APOInitSystemEffects *)pbyData;
+        //APOInitSystemEffects * eff = (APOInitSystemEffects *)pbyData;
     }
     else if (cbDataSize == sizeof(APOInitSystemEffects2))
     {
         auto eff = (APOInitSystemEffects2 *)pbyData;
         // AUDIO_SIGNALPROCESSINGMODE_DEFAULT
         dbg() << "Init APOInitSystemEffects 2" << " mode " << eff->AudioProcessingMode << " L " << m_bIsLocked;
-    }
-    else if (cbDataSize == sizeof(APOInitSystemEffects3))
-    {
-        dbg() << "APOInitSystemEffects 3 L " << m_bIsLocked;
-    }
-    else
-    {
-        return E_INVALIDARG;
     }
 
     return CBaseAudioProcessingObject::Initialize(cbDataSize, pbyData);
@@ -486,8 +477,9 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                 {
                     for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
                     {
-                        auto l = int(inputFrames[2 * i] * 0x7FFF);
-                        auto r = int(inputFrames[2 * i + 1] * 0x7FFF);
+                        // decrease volume before filter if adjustGain should decrease volume
+                        auto l = int((adjustGain_ < 1 ? inputFrames[2 * i] * adjustGain_ : inputFrames[2 * i]) * 0x7FFF);
+                        auto r = int((adjustGain_ < 1 ? inputFrames[2 * i + 1] * adjustGain_ : inputFrames[2 * i + 1]) * 0x7FFF);
 
                         int16_t ol, or;
                         for (auto & filter : filters_)
@@ -497,8 +489,9 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                             r = or ;
                         }
 
-                        outputFrames[2 * i] = (float(ol) / 0x7FFF) * adjustGain_;
-                        outputFrames[2 * i + 1] = (float(or) / 0x7FFF) * adjustGain_;
+                        // decrease volume after filter if adjustGain should increase volume
+                        outputFrames[2 * i] = adjustGain_ > 1 ? (float(ol) / 0x7FFF) * adjustGain_ : (float(ol) / 0x7FFF);
+                        outputFrames[2 * i + 1] = adjustGain_ > 1 ? (float(or) / 0x7FFF) * adjustGain_ : (float(or) / 0x7FFF);
                     }
                 }
                 else

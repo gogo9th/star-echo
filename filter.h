@@ -11,9 +11,15 @@ public:
                 int16_t * lb_out, int16_t * rb_out,
                 int nSamples)
     {
+    #if defined(_DEBUG)
+        static int sCount = 0;
+    #endif
         for (size_t i = 0; i < nSamples; i++)
         {
             filter(lb[i], rb[i], lb_out + i, rb_out + i);
+        #if defined(_DEBUG)
+            ++sCount;
+        #endif
         }
     }
 

@@ -20,7 +20,7 @@ extern "C" {
 
 namespace po = boost::program_options;
 
-static const std::array<std::string, 9> fileExts_{ ".aac", ".gsm", ".wav", ".wavpack", ".ass", ".tta",".flac", ".wma", ".mp3" };
+static const std::array<std::string, 9> fileExts_ { ".aac", ".gsm", ".wav", ".wavpack", ".ass", ".tta",".flac", ".wma", ".mp3" };
 
 
 static std::filesystem::path outputFilePath(const std::filesystem::path & inputPath, std::string outputOptional)
@@ -28,9 +28,9 @@ static std::filesystem::path outputFilePath(const std::filesystem::path & inputP
     if (inputPath.has_extension()
         && std::find_if(fileExts_.begin(), fileExts_.end(),
                         [ext = inputPath.extension().string()](const std::string & r)
-                        {
-                            return boost::iequals(ext, r);
-                        }) != fileExts_.end())
+    {
+        return boost::iequals(ext, r);
+    }) != fileExts_.end())
     {
         std::filesystem::path outputPath;
         if (outputOptional.empty())
@@ -48,10 +48,11 @@ static std::filesystem::path outputFilePath(const std::filesystem::path & inputP
     return {};
 }
 
-bool isInDirectory(const std::filesystem::path &child, const std::filesystem::path &root) {
+bool isInDirectory(const std::filesystem::path & child, const std::filesystem::path & root)
+{
     std::filesystem::path normRoot = root;//std::filesystem::canonical(root);
     std::filesystem::path normChild = child;//std::filesystem::canonical(child);
-    auto itr = std::search(normChild.begin(), normChild.end(), 
+    auto itr = std::search(normChild.begin(), normChild.end(),
                            normRoot.begin(), normRoot.end());
     return itr == normChild.begin();
 }
@@ -68,6 +69,7 @@ int main(int argc, char ** argv)
     std::vector<std::string> filters;
     int threads = 0;
     bool keepFormat = false;
+    bool overwrite = false;
 
 
     po::variables_map opts_map;
@@ -76,8 +78,10 @@ int main(int argc, char ** argv)
         ("help,h", "Display the help message.")
         ("input,i", po::value(&input)->composing(), "Input file(s)/directory.\n- [Default: the current directory]")
         ("output,o", po::value(&output), "If the input is a directory, then output should be a directory.\nIf the input is a file, then the output should be a filename.\nIf the inputs are multiple files, then this option is ignored.\n- [Default: './FINAL' directory]")
-        ("threads,t", po::value(&threads)->composing(), "The number of CPU threads to run.\n- [Default: the processor's available total cores]")
-        ("filter,f", po::value(&filters)->composing(), "\
+        ("threads,t", po::value(&threads), "The number of CPU threads to run.\n- [Default: the processor's available total cores]")
+        ("keepFormat,k", po::bool_switch(&keepFormat), "Keep each output file's format to each the same as its source file's.\n- [Default: the output format is .flac]")
+        ("overwrite,w", po::bool_switch(&overwrite), "overwrite output file if it exists")
+        ("filter,f", po::value(&filters), "\
 Filter(s) to be applied:\n\
  CH[,roomSize[,gain]] - Cathedral,\n\
    Default is 'CH,10,10' if parameters omitted\n\
@@ -88,8 +92,7 @@ Predefined equalizer filters:\n\
  CLUB,\n\
  RnB \
 ")
-        ("keepFormat,k", po::bool_switch(&keepFormat)->default_value(false), "Keep each output file's format to each the same as its source file's.\n- [Default: the output format is .flac]")
-        ;
+;
     po::positional_options_description posd;
     posd.add("input", -1);
 
@@ -117,25 +120,30 @@ Predefined equalizer filters:\n\
 
     std::vector<FileItem> inputFiles;
 
-    if (input.size() <= 1)
-    { 
-        std::filesystem::path inputPath = input.empty() ? std::filesystem::absolute(".") : std::filesystem::absolute(input[0]);
+    if (input.empty())
+    {
+        input.push_back(".");
+    }
+
+    for (const auto & i : input)
+    {
+        std::filesystem::path inputPath(std::filesystem::absolute(i));
 
         if (std::filesystem::is_directory(inputPath))
-        {   
+        {
             if (output.empty())
             {
                 output = "./FINAL";
             }
             std::filesystem::path outputPath = std::filesystem::absolute(output);
-            
-            for (auto const & dir_entry : std::filesystem::recursive_directory_iterator{ inputPath })
-            {  
-                    if (dir_entry.is_regular_file() && dir_entry.path().has_extension() 
+
+            for (auto const & dir_entry : std::filesystem::recursive_directory_iterator { inputPath })
+            {
+                if (dir_entry.is_regular_file() && dir_entry.path().has_extension()
                     && !isInDirectory(dir_entry.path(), outputPath)) // skip files in the output directory
                 {
                     std::filesystem::path inputFile = dir_entry.path();
-                    
+
                     // filter by file extension
                     if (std::find_if(fileExts_.begin(), fileExts_.end(), [ext = inputFile.extension().string()](const std::string & r)
                     {
@@ -149,8 +157,10 @@ Predefined equalizer filters:\n\
                         {
                             outputFile.replace_extension(".flac");
                         }
-                                if (!std::filesystem::exists(outputFile)) // if the file was already converted in the past, skip
-                                    inputFiles.push_back({ inputFile, outputFile });
+                        if (overwrite || !std::filesystem::exists(outputFile))    // if the file was already converted in the past, skip
+                        {
+                            inputFiles.push_back({ inputFile, outputFile });
+                        }
                     }
                 }
             }
@@ -164,8 +174,10 @@ Predefined equalizer filters:\n\
                 {
                     outputFile.replace_extension(".flac");
                 }
-
-                inputFiles.push_back({ inputPath, outputFile });
+                if (overwrite || !std::filesystem::exists(outputFile))    // if the file was already converted in the past, skip
+                {
+                    inputFiles.push_back({ inputPath, outputFile });
+                }
             }
         }
         else
@@ -174,24 +186,7 @@ Predefined equalizer filters:\n\
             return -1;
         }
     }
-    else
-    {
-        for (auto & i : input)
-        {
-            std::filesystem::path inputPath = std::filesystem::absolute(i);
 
-            auto outputFile = outputFilePath(inputPath, {});
-            if (!outputFile.empty())
-            {
-                if (!keepFormat)
-                {
-                    outputFile.replace_extension(".flac");
-                }
-
-                inputFiles.push_back({ inputPath, outputFile });
-            }
-        }
-    }
 
     if (inputFiles.empty())
     {

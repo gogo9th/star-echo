@@ -96,7 +96,7 @@ private:
     float                                   adjustGain_ = 1;
 
     bool lockedIsPCM_ = false;
-    bool lockedSampleRate_ = 0;
+    int lockedSampleRate_ = 0;
 
     std::thread settingMonitorThread_;
     Handle      stopSettingMonitorEvent_;
