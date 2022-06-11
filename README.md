@@ -69,9 +69,9 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 
 ## Windows Installation
 
-<b><u>Step 1.</u></b> Go and install CMake: [https://cmake.org/install/](https://cmake.org/install/)
+<b><u>Step 1.</u></b> Go and install [CMake](https://cmake.org/install/)
 
-<b><u>Step 2.</u></b> Go and install Visual Studio (C++ Development): [https://visualstudio.microsoft.com/ko/downloads/](https://visualstudio.microsoft.com/ko/downloads/)
+<b><u>Step 2.</u></b> Go and install [Visual Studio C++ Development](https://visualstudio.microsoft.com/ko/downloads/)
 
 <b><u>Step 3.</u></b> Install vcpkg. Open the PowerShell.
 
@@ -106,7 +106,7 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 
 <b><u>Step 7.</u></b> Pack `.exe` and `.dll` files into a single `.exe` file.
 
-- Download and install Enigma Virtual Box at [https://enigmaprotector.com/en/downloads.html](https://enigmaprotector.com/en/downloads.html).
+- Download and install [Enigma Virtual Box](https://enigmaprotector.com/en/downloads.html).
 
 - Run Enigma Virtual Box.
 
@@ -125,3 +125,21 @@ This software generates the same sound effect as the reverse-engineered [Samsung
     $ ./q2cathedral_boxed.exe --help 
 ```
 * <u>Option 2:</u> Double-click the generated `q2cathedral_boxed.exe`, then all music files in the same directory will be converted and stored in the `"FINAL"` folder.
+
+
+
+
+## "Ultraverse" Dynamic Audio Engine Installation (Windows)
+
+<b><u>Step 1.</u></b> Go and install the [Wix toolset](https://wixtoolset.org/releases/).
+
+<b><u>Step 2.</u></b> Go and install [Visual Studio C++ Development](https://visualstudio.microsoft.com/ko/downloads/).
+
+<b><u>Step 3.</u></b> Build the installer at .
+
+```console
+    $ cd yp-q2-cathedral/Ultraverse
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\Ultraverse.sln
+```
+
+<b><u>Step 4.</u></b> The installer is created at `yp-q2-cathedral-main\yp-q2-cathedral-main\Ultraverse\Setup\bin\x64\Debug\Setup.msi`.
