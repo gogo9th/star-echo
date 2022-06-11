@@ -590,22 +590,6 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
 
         if (params[0] == L"ch")
         {
-            static const float adjustGains[13][11] = {
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },     // RS 1
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.35f }, // RS 10
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.562f /*1.777*/},
-            };
-
             auto chRoomSize = params.size() > 1 ? std::stoi(params[1]) : 0;
             auto chGain = params.size() > 2 ? std::stoi(params[2]) : 0;
 
@@ -613,10 +597,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                 && chGain >= 0 && chGain <= 11
                 && lockedSampleRate_ != 0)
             {
-                auto chAdjustGain = adjustGains[chRoomSize - 1][chGain];
-                dbg() << "CH adjust gain: " << chAdjustGain;
-                adjustGain *= chAdjustGain;
-
+                adjustGain *= 0.75;
                 newFilters.push_back(std::make_unique<DNSE_CH>(chRoomSize, chGain, lockedSampleRate_));
             }
             else if (chRoomSize != 0 || chGain != 0)
@@ -638,21 +619,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                     gains[i++] = std::stoi(param);
                 }
 
-                float eqAdjustGain = 1;
-                if (gains == std::array<int16_t, 7>{13, 19, 15, 13, 13, 15, 11 /*rnb*/}
-                    || gains == std::array<int16_t, 7>{19, 17, 9, 7, 15, 19, 18} /*club*/)
-                {
-                    eqAdjustGain = 0.76f;
-                }
-                else if (gains == std::array<int16_t, 7>{12, 10, 16, 12, 14, 12, 10 } /*ballad*/)
-                {
-                    
-                    eqAdjustGain = 0.90f;
-                }
-
-                dbg() << "EQ adjust gain: " << eqAdjustGain;
-                adjustGain *= eqAdjustGain;
-
+                adjustGain *= 0.75;
                 newFilters.push_back(std::make_unique<DNSE_EQ>(gains, lockedSampleRate_));
             }
             else
