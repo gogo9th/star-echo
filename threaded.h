@@ -16,14 +16,12 @@ class ThreadedWorker
 {
     ThreadedWorker(const ThreadedWorker &) = delete;
     ThreadedWorker operator=(const ThreadedWorker &) = delete;
-
 public:
     ThreadedWorker(const std::vector<Workitem> & items, std::unique_ptr<Worker> & worker, int maxThreads = 0)
         : items_(items)
         , worker_(std::move(worker))
     {
         maxThreads_ = maxThreads > 0 ? maxThreads : std::thread::hardware_concurrency();
-
         msg() << "Using " << maxThreads_ << " CPU threads...";
         for (int i = 0; i < maxThreads_; i++)
         {	// create a new thread, passing: (threading function address, this scope's address, custom argument);

@@ -277,11 +277,24 @@ std::string MediaProcess::operator()(const FileItem & item) const
     }
 }
 
+
 void MediaProcess::process(const FileItem & item) const
+{
+   std::vector<float> normalizers;
+   while (true)
+   {
+      if (!do_process(item, normalizers) || !item.normalize)
+          break;
+   }
+}
+
+
+bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normalizers) const
 {
     //#if defined(_DEBUG)
     //    msg() << item.output.string();
     //#endif // defined(_DEBUG)
+    bool normalize = item.normalize;
 
     std::filesystem::create_directories(item.output.parent_path());
 
@@ -504,6 +517,10 @@ void MediaProcess::process(const FileItem & item) const
     };
 
     auto filters = filterFab_.create(audioCodecIn->sample_rate);
+
+    for (int i = 0; i < normalizers.size(); i++)
+        filters[i]->normalizer = normalizers[i];
+
 
     // Read one audio frame from the input file into a temporary packet.
     bool input_eof = false;
@@ -731,6 +748,7 @@ void MediaProcess::process(const FileItem & item) const
         }
     }
 
+    bool ripped = false;
     if (r == 0)
     {
         // Encode all unencoded remaining data and flush them to the output music file
@@ -743,6 +761,39 @@ void MediaProcess::process(const FileItem & item) const
         audioCodecOut.reset();
         avfmt_out.reset();
 
-        std::filesystem::rename(tempOut, item.output);
+        int i = 0;
+        bool is_initial = !normalizers.size();
+        for (auto filter = filters.begin(); normalize && filter != filters.end(); ++filter)
+        {   
+            float factor_max = 1.0f, factor_min = 1.0f;
+
+            if (is_initial)
+               normalizers.push_back((*filter)->normalizer);
+
+            // normalize only the first ripping filter 
+            if (ripped)
+            {  
+               continue;
+            }
+            // compute this processing round's max & min normalization factor
+            if ((*filter)->global_max != 0x7FFF)
+            {   factor_max = (float)((*filter)->global_max) / (float)0x7FFF;
+            }
+            if ((*filter)->global_min != -0x8000)
+            {   factor_min = (float)((*filter)->global_min) / (float)(-0x8000);
+            }
+            // compute (or update) the normalization factor  
+            if (factor_max != 1.0f || factor_min != 1.0f)
+            {  ripped = true;
+               normalizers[i] *= std::max(factor_max, factor_min);
+ 
+               msg() << "- Normalizing Filter[" << i << "]: Division Factor = " << normalizers[i];
+            }
+            i++;
+        }
+        // save the music file only if there is no ripping sound
+        if (!normalize || !ripped)
+           std::filesystem::rename(tempOut, item.output);
     }
+    return r == 0 && ripped;
 }

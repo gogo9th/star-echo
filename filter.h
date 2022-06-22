@@ -4,8 +4,18 @@
 
 class Filter
 {
+   
 public:
+    int32_t global_max, global_min;
+    float normalizer;
     virtual ~Filter() = default;
+
+    Filter()
+    {
+        global_max = 0x7FFF;
+        global_min = -0x8000;
+        normalizer = 1.0f;
+    }
 
     void filter(const int16_t * lb, const int16_t * rb,
                 int16_t * lb_out, int16_t * rb_out,
@@ -21,6 +31,11 @@ public:
             ++sCount;
         #endif
         }
+    }
+
+    void reset_global_max_min()
+    {   global_max = 0x7FFF;
+        global_min = -0x8000;
     }
 
     virtual void filter(int16_t l, const int16_t r,

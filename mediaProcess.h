@@ -4,6 +4,7 @@
 #include <vector>
 #include <filesystem>
 #include <functional>
+#include <vector>
 
 #include "filter.h"
 
@@ -12,6 +13,7 @@ struct FileItem
 {
     std::filesystem::path input;
     std::filesystem::path output;
+    bool normalize;
 };
 
 class FilterFab
@@ -39,6 +41,7 @@ public:
 
 private:
     void process(const FileItem & item) const;
+    bool do_process(const FileItem & item, std::vector<float>& normalizers) const;
 
-    const FilterFab   filterFab_;
+    FilterFab   filterFab_;
 };

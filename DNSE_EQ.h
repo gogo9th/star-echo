@@ -11,7 +11,7 @@ public:
     DNSE_EQ(const std::array<int16_t, 7> & gains, int sampleRate);
     ~DNSE_EQ();
 
-    virtual void filter(int16_t l, const int16_t r,
+    virtual void filter(int16_t l, int16_t r,
                         int16_t * l_out, int16_t * r_out) override;
 
 private:

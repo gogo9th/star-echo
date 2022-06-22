@@ -15,7 +15,7 @@ CFLAGS = -O2 -g -pthread -std=c++17
 
 SRC_OBJ := $(SRC:.cpp=.o)
 
-.c.o:
+.c.o: 
 	g++ -c $(CFLAGS) $< -o $@
 
 .cpp.o:

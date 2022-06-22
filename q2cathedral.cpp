@@ -48,6 +48,7 @@ static std::filesystem::path outputFilePath(const std::filesystem::path & inputP
     return {};
 }
 
+
 bool isInDirectory(const std::filesystem::path & child, const std::filesystem::path & root)
 {
     std::filesystem::path normRoot = root;//std::filesystem::canonical(root);
@@ -70,6 +71,7 @@ int main(int argc, char ** argv)
     int threads = 0;
     bool keepFormat = false;
     bool overwrite = false;
+    bool normalize = false;
 
 
     po::variables_map opts_map;
@@ -80,7 +82,8 @@ int main(int argc, char ** argv)
         ("output,o", po::value(&output), "If the input is a directory, then output should be a directory.\nIf the input is a file, then the output should be a filename.\nIf the inputs are multiple files, then this option is ignored.\n- [Default: './FINAL' directory]")
         ("threads,t", po::value(&threads), "The number of CPU threads to run.\n- [Default: the processor's available total cores]")
         ("keepFormat,k", po::bool_switch(&keepFormat), "Keep each output file's format to each the same as its source file's.\n- [Default: the output format is .flac]")
-        ("overwrite,w", po::bool_switch(&overwrite), "overwrite output file if it exists")
+        ("overwrite,w", po::bool_switch(&overwrite), "overwrite output file if it exists [Default: false]")
+        ("normalize,n", po::bool_switch(&normalize), "normalize the sound to avoid rips [Default: false]")
         ("filter,f", po::value(&filters), "\
 Filter(s) to be applied:\n\
  CH[,roomSize[,gain]] - Cathedral,\n\
@@ -95,7 +98,6 @@ Predefined equalizer filters:\n\
 ;
     po::positional_options_description posd;
     posd.add("input", -1);
-
     try
     {
         po::store(po::command_line_parser(argc, argv).options(options).positional(posd).run(), opts_map);
@@ -159,7 +161,7 @@ Predefined equalizer filters:\n\
                         }
                         if (overwrite || !std::filesystem::exists(outputFile))    // if the file was already converted in the past, skip
                         {
-                            inputFiles.push_back({ inputFile, outputFile });
+                            inputFiles.push_back({ inputFile, outputFile, normalize });
                         }
                     }
                 }
@@ -176,7 +178,7 @@ Predefined equalizer filters:\n\
                 }
                 if (overwrite || !std::filesystem::exists(outputFile))    // if the file was already converted in the past, skip
                 {
-                    inputFiles.push_back({ inputPath, outputFile });
+                    inputFiles.push_back({ inputPath, outputFile, normalize });
                 }
             }
         }
