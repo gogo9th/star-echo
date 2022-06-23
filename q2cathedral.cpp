@@ -196,7 +196,7 @@ Predefined equalizer filters:\n\
         return 0;
     }
 
-    FilterFab fab;
+    FilterFabric fab;
     if (opts_map.find("input-file") != opts_map.end())
     {
         opts_map["input-file"].as<std::vector<std::string>>();

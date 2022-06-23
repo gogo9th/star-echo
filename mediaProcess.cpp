@@ -17,7 +17,6 @@ extern "C" {
 
 #include "mediaProcess.h"
 #include "log.hpp"
-#include "utils.h"
 #include "DNSE_CH.h"
 #include "DNSE_EQ.h"
 
@@ -158,97 +157,6 @@ static void writeToFifo(AVAudioFifo * fifo, void ** buffers, int nbSamples)
 
     if (av_audio_fifo_write(fifo, buffers, nbSamples) < nbSamples)
         throw MPError("failed to write to fifo");
-}
-
-//
-
-bool FilterFab::addDesc(const std::string & desc)
-{
-    try
-    {
-        auto params = stringSplit(desc, ",");
-        if (params.empty())
-        {
-            return false;
-        }
-
-        auto filterName = params.front();
-        params.erase(params.begin());
-
-        if (boost::iequals(filterName, "ch"))
-        {
-            int a1 = params.size() > 0 ? std::stoi(params[0]) : 10;
-            int a2 = params.size() > 1 ? std::stoi(params[1]) : 10/*9*/;
-            filterCtors_.push_back(std::bind([] (int a1, int a2, int sr) 
-                                             {
-                                                 return std::make_unique<DNSE_CH>(a1, a2, sr);
-                                             }, a1, a2, std::placeholders::_1));
-            return true;
-        }
-        else if (boost::iequals(filterName, "eq"))
-        {
-            if (params.size() < 7)
-            {
-                err() << "too few parameters for EQ filter";
-                return false;
-            }
-
-            std::array<int16_t, 7> gains;
-            int i = 0;
-            for (auto & param : params)
-            {
-                gains[i++] = std::stoi(param);
-            }
-            filterCtors_.push_back(std::bind([] (auto a1, int sr)
-                                             {
-                                                 return std::make_unique<DNSE_EQ>(a1, sr);
-                                             }, gains, std::placeholders::_1));
-            return true;
-        }
-        else if (boost::iequals(filterName, "ballad"))
-        {
-            filterCtors_.push_back(std::bind([] (auto a1, int sr)
-                                             {
-                                                 return std::make_unique<DNSE_EQ>(a1, sr);
-                                             }, std::array<int16_t, 7> { 12, 10, 16, 12, 14, 12, 10 } , std::placeholders::_1));
-            return true;
-        }
-        else if (boost::iequals(filterName, "club"))
-        {
-            filterCtors_.push_back(std::bind([] (auto a1, int sr)
-                                             {
-                                                 return std::make_unique<DNSE_EQ>(a1, sr);
-                                             }, std::array<int16_t, 7> { 19, 17, 9, 7, 15, 19, 18 } , std::placeholders::_1));
-            return true;
-        }
-        else if (boost::iequals(filterName, "rnb"))
-        {
-            filterCtors_.push_back(std::bind([] (auto a1, int sr)
-                                             {
-                                                 return std::make_unique<DNSE_EQ>(a1, sr);
-                                             }, std::array<int16_t, 7> { 13, 19, 15, 13, 13, 15, 11 } , std::placeholders::_1));
-            return true;
-        }
-        else
-        {
-            err() << "unsupported filter " << params[0];
-        }
-    }
-    catch (const std::exception & e)
-    {
-        err() << "invalid filter: " << desc << " (" << e.what() << ')';
-    }
-    return false;
-}
-
-std::vector<std::unique_ptr<Filter>> FilterFab::create(int sampleRate) const
-{
-    std::vector<std::unique_ptr<Filter>> r;
-    for (auto & f : filterCtors_)
-    {
-        r.emplace_back(std::move(f(sampleRate)));
-    }
-    return r;
 }
 
 //
@@ -500,7 +408,6 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
     scoped_ptr<AVFrame> frame_in(av_frame_alloc(), [] (auto * d) { av_frame_free(&d); });
     if (!frame_in) throw MPError("failed to allocate frame");
 
-
     scoped_ptr<AVAudioFifo> fifo(av_audio_fifo_alloc(audioCodecOut->sample_fmt, audioCodecOut->channels, std::max(audioCodecOut->frame_size, 1)),
                                  [] (auto * d) { av_audio_fifo_free(d); });
     if (!fifo) throw MPError("failed to allocate fifo");
@@ -521,6 +428,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
     for (int i = 0; i < normalizers.size(); i++)
         filters[i]->normalizer = normalizers[i];
 
+    //bool isFirstChunk = true;
 
     // Read one audio frame from the input file into a temporary packet.
     bool input_eof = false;
@@ -625,6 +533,16 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
                 nb_samples = swr_convert(swr_in, buffers, swrOutSamples, (const uint8_t **)frame_in->data, nb_samples);
                 // cannot // assert(nb_samples == cwrOutSamples);
 
+                // 128 bytes gap of Q2 ClaStr filter output to CH
+                //if (isFirstChunk)
+                //{
+                //    nb_samples += 128;
+                //    lb.insert(lb.begin(), 128, 0);
+                //    rb.insert(rb.begin(), 128, 0);
+                //    isFirstChunk = false;
+                //}
+
+
                 lbIn = lb.data();
                 rbIn = rb.data();
             }
@@ -644,12 +562,10 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
             // convert can produce no samples ... if the input is like 1 sample ... uhhh 
             if (nb_samples > 0)
             {
-
                 // These are for output data (after filter-processing)
                 if (lbOut.size() < nb_samples) lbOut.resize(nb_samples);
                 if (rbOut.size() < nb_samples) rbOut.resize(nb_samples);
 
-                // Our prototype had only 1 filter: CH (Cathedral)
                 for (auto filter = filters.begin(); filter != filters.end(); ++filter)
                 {
                     (*filter)->filter(lbIn, rbIn, lbOut.data(), rbOut.data(), nb_samples);

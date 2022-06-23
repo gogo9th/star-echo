@@ -4,9 +4,9 @@
 #include <vector>
 #include <filesystem>
 #include <functional>
-#include <vector>
 
 #include "filter.h"
+#include "FilterFabric.h"
 
 
 struct FileItem
@@ -16,24 +16,13 @@ struct FileItem
     bool normalize;
 };
 
-class FilterFab
-{
-public:
-    // 'ch,10,9'
-    bool addDesc(const std::string & desc);
-    std::vector<std::unique_ptr<Filter>> create(int sampleRate) const;
-
-private:
-    std::vector<std::function<std::unique_ptr<Filter>(int)>> filterCtors_;
-};
-
 
 class MediaProcess
 {
     MediaProcess(const MediaProcess &) = delete;
     MediaProcess operator=(const MediaProcess &) = delete;
 public:
-    MediaProcess(const FilterFab & fab)
+    MediaProcess(const FilterFabric & fab)
         : filterFab_(fab)
     {}
 
@@ -43,5 +32,5 @@ private:
     void process(const FileItem & item) const;
     bool do_process(const FileItem & item, std::vector<float>& normalizers) const;
 
-    FilterFab   filterFab_;
+    FilterFabric   filterFab_;
 };
