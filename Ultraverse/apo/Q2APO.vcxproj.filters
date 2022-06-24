@@ -13,6 +13,9 @@
     <ClCompile Include="..\..\DNSE_EQ.cpp">
       <Filter>Q2</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\DbReduce.cpp">
+      <Filter>Q2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Q2APO.h" />
@@ -28,6 +31,9 @@
       <Filter>Q2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\DNSE_EQ.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DbReduce.h">
       <Filter>Q2</Filter>
     </ClInclude>
   </ItemGroup>

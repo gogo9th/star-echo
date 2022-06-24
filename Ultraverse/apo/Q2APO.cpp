@@ -11,6 +11,7 @@
 #include "common/registry.h"
 #include "common/settings.h"
 #include "common/error.h"
+#include <DbReduce.h>
 
 
 #pragma comment(lib, "legacy_stdio_definitions.lib")    // _vsnwprintf
@@ -459,8 +460,8 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                             l = ol;
                             r = or;
                         }
-                        outputFrames[2 * i] = int16_t(std::round(float(ol) * adjustGain_));
-                        outputFrames[2 * i + 1] = int16_t(std::round(float(or ) * adjustGain_));
+                        outputFrames[2 * i] = ol;
+                        outputFrames[2 * i + 1] = or;
                     }
                 }
                 else
@@ -477,9 +478,8 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                 {
                     for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
                     {
-                        // decrease volume before filter if adjustGain should decrease volume
-                        auto l = int((adjustGain_ < 1 ? inputFrames[2 * i] * adjustGain_ : inputFrames[2 * i]) * 0x7FFF);
-                        auto r = int((adjustGain_ < 1 ? inputFrames[2 * i + 1] * adjustGain_ : inputFrames[2 * i + 1]) * 0x7FFF);
+                        auto l = int(std::round(inputFrames[2 * i] * 0x7FFF));
+                        auto r = int(std::round(inputFrames[2 * i + 1] * 0x7FFF));
 
                         int16_t ol, or;
                         for (auto & filter : filters_)
@@ -490,8 +490,8 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                         }
 
                         // decrease volume after filter if adjustGain should increase volume
-                        outputFrames[2 * i] = adjustGain_ > 1 ? (float(ol) / 0x7FFF) * adjustGain_ : (float(ol) / 0x7FFF);
-                        outputFrames[2 * i + 1] = adjustGain_ > 1 ? (float(or) / 0x7FFF) * adjustGain_ : (float(or) / 0x7FFF);
+                        outputFrames[2 * i] = float(ol) / 0x7FFF;
+                        outputFrames[2 * i + 1] = float(or) / 0x7FFF;
                     }
                 }
                 else
@@ -581,7 +581,6 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
     }
 
     std::vector<std::unique_ptr<Filter>> newFilters;
-    float adjustGain = 1;
 
     auto filters = stringSplit(settings, L";");
     for (auto & setting : filters)
@@ -597,7 +596,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                 && chGain >= 0 && chGain <= 11
                 && lockedSampleRate_ != 0)
             {
-                adjustGain *= 0.75;
+                newFilters.push_back(std::make_unique<DbReduce>(9));
                 newFilters.push_back(std::make_unique<DNSE_CH>(chRoomSize, chGain, lockedSampleRate_));
             }
             else if (chRoomSize != 0 || chGain != 0)
@@ -619,7 +618,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                     gains[i++] = std::stoi(param);
                 }
 
-                adjustGain *= 0.75;
+                newFilters.push_back(std::make_unique<DbReduce>(6));
                 newFilters.push_back(std::make_unique<DNSE_EQ>(gains, lockedSampleRate_));
             }
             else
@@ -636,8 +635,6 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
     {
         std::lock_guard lk(filtersMtx_);
         filters_.swap(newFilters);
-        adjustGain_ = adjustGain;
-        dbg() << "Total adjust gain: " << adjustGain_;
     }
 }
 

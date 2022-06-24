@@ -3,7 +3,7 @@
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
   <?include $(sys.CURRENTDIR)\vars.wxi?>
 
-  <?define ProductVersion="1.0.7.0"?>
+  <?define ProductVersion="1.0.8.0"?>
 
   <Product Id="*"
            Name="Ultraverse"
