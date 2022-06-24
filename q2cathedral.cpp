@@ -87,7 +87,7 @@ int main(int argc, char ** argv)
         ("filter,f", po::value(&filters), "\
 Filter(s) to be applied:\n\
  CH[,roomSize[,gain]] - Cathedral,\n\
-   Default is 'CH,10,10' if parameters omitted\n\
+   Default is 'CH,10,9' if parameters omitted\n\
  EQ,b1,b2,b3,b4,b5,b6,b7 - Equalizer,\n\
    0<=b<=24, b=12 is '0 gain'\n\
 Predefined equalizer filters:\n\
@@ -207,7 +207,7 @@ Predefined equalizer filters:\n\
     }
     for (auto & f : filters)
     {
-        if (!fab.addDesc(f))
+        if (!fab.addDesc(f, !normalize))
         {
             return -1;
         }

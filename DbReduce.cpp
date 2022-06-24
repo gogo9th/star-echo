@@ -8,7 +8,7 @@ static const int dbReduceCoeff[] = { 0x4000, 0x390A, 0x32D6, 0x2D4F, 0x2862, 0x2
 
 DbReduce::DbReduce(int db)
 {
-    db = std::max(0, std::min<int>(std::size(dbReduceCoeff) - 1, db));
+    db = std::max(0, std::min((int)std::size(dbReduceCoeff) - 1, db));
     gain_ = 4 * dbReduceCoeff[db];
 }
 

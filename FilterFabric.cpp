@@ -11,10 +11,23 @@
 #include "DbReduce.h"
 
 
-bool FilterFabric::addDesc(const std::string & desc)
+bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
 {
     try
     {
+        if (boost::iequals(desc, "ballad"))
+        {
+            desc = "eq,12,10,16,12,14,12,10";
+        }
+        else if (boost::iequals(desc, "club"))
+        {
+            desc = "eq,19,17,9,7,15,19,18";
+        }
+        else if (boost::iequals(desc, "rnb"))
+        {
+            desc = "eq,13,19,15,13,13,15,11";
+        }
+
         auto params = stringSplit(desc, ",");
         if (params.empty())
         {
@@ -26,13 +39,16 @@ bool FilterFabric::addDesc(const std::string & desc)
 
         if (boost::iequals(filterName, "ch"))
         {
-            //filterCtors_.push_back(std::bind([] (int /*sr*/)
-            //                                 {
-            //                                     return std::make_unique<DbReduce>(9);
-            //                                 }, std::placeholders::_1));
+            if (doDbReduce)
+            {
+                filterCtors_.push_back(std::bind([] (int /*sr*/)
+                                                 {
+                                                     return std::make_unique<DbReduce>(9);
+                                                 }, std::placeholders::_1));
+            }
 
             int a1 = params.size() > 0 ? std::stoi(params[0]) : 10;
-            int a2 = params.size() > 1 ? std::stoi(params[1]) : 10/*9*/;
+            int a2 = params.size() > 1 ? std::stoi(params[1]) : 9;
             filterCtors_.push_back(std::bind([] (int a1, int a2, int sr)
                                              {
                                                  return std::make_unique<DNSE_CH>(a1, a2, sr);
@@ -53,39 +69,23 @@ bool FilterFabric::addDesc(const std::string & desc)
             {
                 gains[i++] = std::stoi(param);
             }
+
+            if (doDbReduce)
+            {
+                filterCtors_.push_back(std::bind([] (int /*sr*/)
+                                                 {
+                                                     return std::make_unique<DbReduce>(6);
+                                                 }, std::placeholders::_1));
+            }
             filterCtors_.push_back(std::bind([] (auto a1, int sr)
                                              {
                                                  return std::make_unique<DNSE_EQ>(a1, sr);
                                              }, gains, std::placeholders::_1));
             return true;
         }
-        else if (boost::iequals(filterName, "ballad"))
-        {
-            filterCtors_.push_back(std::bind([] (auto a1, int sr)
-                                             {
-                                                 return std::make_unique<DNSE_EQ>(a1, sr);
-                                             }, std::array<int16_t, 7> { 12, 10, 16, 12, 14, 12, 10 }, std::placeholders::_1));
-            return true;
-        }
-        else if (boost::iequals(filterName, "club"))
-        {
-            filterCtors_.push_back(std::bind([] (auto a1, int sr)
-                                             {
-                                                 return std::make_unique<DNSE_EQ>(a1, sr);
-                                             }, std::array<int16_t, 7> { 19, 17, 9, 7, 15, 19, 18 }, std::placeholders::_1));
-            return true;
-        }
-        else if (boost::iequals(filterName, "rnb"))
-        {
-            filterCtors_.push_back(std::bind([] (auto a1, int sr)
-                                             {
-                                                 return std::make_unique<DNSE_EQ>(a1, sr);
-                                             }, std::array<int16_t, 7> { 13, 19, 15, 13, 13, 15, 11 }, std::placeholders::_1));
-            return true;
-        }
         else
         {
-            err() << "unsupported filter " << params[0];
+            err() << "unsupported filter " << filterName;
         }
     }
     catch (const std::exception & e)

@@ -9,7 +9,8 @@ class FilterFabric
 {
 public:
     // 'ch,10,9'
-    bool addDesc(const std::string & desc);
+    // 'eq,12,12,12,12,12,12,12
+    bool addDesc(std::string desc, bool doDbReduce = true);
 
     std::vector<std::unique_ptr<Filter>> create(int sampleRate) const;
 
