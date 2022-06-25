@@ -172,50 +172,34 @@ bool valueExists(const HKey & hkey, std::wstring_view value)
     return result == ERROR_SUCCESS;
 }
 
-void setValue(std::wstring_view key, std::wstring_view name, std::wstring_view value)
-{
-    auto hKey = openKey(key, KEY_SET_VALUE | KEY_WOW64_64KEY);
-    setValue(hKey, name, value);
-}
 
-void setValue(std::wstring_view key, std::wstring_view name, unsigned long value)
+void setValue(const HKey & hkey, std::wstring_view name, std::wstring_view value)
 {
-    auto hKey = openKey(key, KEY_SET_VALUE | KEY_WOW64_64KEY);
-    setValue(hKey, name, value);
-}
-
-void setValue(const HKey & key, std::wstring_view name, std::wstring_view value)
-{
-    auto status = RegSetValueExW(key, name.data(), 0, REG_SZ, (const BYTE *)value.data(), (DWORD)((value.size() + 1) * sizeof(wchar_t)));
+    auto status = RegSetValueExW(hkey, name.data(), 0, REG_SZ, (const BYTE *)value.data(), (DWORD)((value.size() + 1) * sizeof(wchar_t)));
     if (status != ERROR_SUCCESS)
         throw WError(L"Failed to write to registry value " + name + L": " + status);
 }
 
-void setValue(const HKey & key, std::wstring_view name, unsigned long value)
+void setValue(const HKey & hkey, std::wstring_view name, unsigned long value)
 {
-    auto status = RegSetValueExW(key, name.data(), 0, REG_DWORD, (const BYTE *)&value, sizeof(unsigned long));
+    auto status = RegSetValueExW(hkey, name.data(), 0, REG_DWORD, (const BYTE *)&value, sizeof(unsigned long));
+    if (status != ERROR_SUCCESS)
+        throw WError(L"Failed to write to registry value " + name + L": " + status);
+}
+
+void setValue(const HKey & hkey, std::wstring_view name, std::vector<uint8_t> & value)
+{
+    auto status = RegSetValueExW(hkey, name.data(), 0, REG_BINARY, value.data(), (int)value.size());
     if (status != ERROR_SUCCESS)
         throw WError(L"Failed to write to registry value " + name + L": " + status);
 }
 
 
-void getValue(std::wstring_view key, std::wstring_view name, std::wstring & value)
-{
-    auto hKey = openKey(key);
-    return getValue(hKey, name, value);
-}
-
-void getValue(std::wstring_view key, std::wstring_view name, unsigned long & value)
-{
-    auto hKey = openKey(key);
-    return getValue(hKey, name, value);
-}
-
-void getValue(const HKey & key, std::wstring_view name, std::wstring & value)
+void getValue(const HKey & hkey, std::wstring_view name, std::wstring & value)
 {
     DWORD type;
     DWORD bufSize;
-    auto status = RegQueryValueExW(key, name.data(), NULL, &type, NULL, &bufSize);
+    auto status = RegQueryValueExW(hkey, name.data(), NULL, &type, NULL, &bufSize);
     if (status != ERROR_SUCCESS)
         throw WError(L"Failed to read registry value " + name + L": " + status);
 
@@ -229,7 +213,7 @@ void getValue(const HKey & key, std::wstring_view name, std::wstring & value)
     }
 
     value.resize(bufSize / sizeof(wchar_t) + 1);
-    status = RegQueryValueExW(key, name.data(), NULL, NULL, (LPBYTE)value.data(), &bufSize);
+    status = RegQueryValueExW(hkey, name.data(), NULL, NULL, (LPBYTE)value.data(), &bufSize);
     if (status != ERROR_SUCCESS)
         throw WError(L"Failed to read registry value " + name + L": " + status);
 
@@ -256,6 +240,23 @@ void getValue(const HKey & hkey, std::wstring_view name, unsigned long & value)
         throw WError(L"Failed to read registry value " + name + L": " + status);
 
     value = *(unsigned long *)buf.get();
+}
+
+void getValue(const HKey & hkey, std::wstring_view name, std::vector<uint8_t> & value)
+{
+    DWORD type;
+    DWORD bufSize;
+    auto status = RegQueryValueExW(hkey, name.data(), NULL, &type, NULL, &bufSize);
+    if (status != ERROR_SUCCESS)
+        throw WError(L"Failed to read registry value " + name + L": " + status);
+
+    if (type != REG_BINARY)
+        throw WError(L"Registry value " + name + L" has unexpected type " + type);
+
+    value.resize(bufSize);
+    status = RegQueryValueExW(hkey, name.data(), NULL, NULL, (LPBYTE)value.data(), &bufSize);
+    if (status != ERROR_SUCCESS)
+        throw WError(L"Failed to read registry value " + name + L": " + status);
 }
 
 void deleteValue(std::wstring_view key, std::wstring_view value)
