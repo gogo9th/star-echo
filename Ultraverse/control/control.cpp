@@ -204,8 +204,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         if (Registry::keyExists(Settings::appPath))
         {
-            InsertMenuW(hMenu, NI_OperaHall, MF_BYCOMMAND, NI_OperaHall, L"Opera Hall");
-            InsertMenuW(hMenu, NI_OperaHall2, MF_BYCOMMAND, NI_OperaHall2, L"Opera Hall 2");
+            InsertMenuW(hMenu, NI_OperaHall, MF_BYCOMMAND, NI_OperaHall, L"Cathedral");
+            //InsertMenuW(hMenu, NI_OperaHall2, MF_BYCOMMAND, NI_OperaHall2, L"Opera Hall 2");
             InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe, L"Live Cafe");
             InsertMenuW(hMenu, NI_RnB, MF_BYCOMMAND, NI_RnB, L"R&&B");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
