@@ -59,8 +59,6 @@ void MainWindow::create()
     ListView_InsertColumn(deviceList_, 2, &column);
 
     updateDeviceInfos();
-
-
 }
 
 INT_PTR MainWindow::dlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -144,7 +142,7 @@ void MainWindow::onButtonClicked(int id)
                         if (askEnableEnh)
                         {
                             askEnableEnh = false;
-                            auto r = MessageBoxW(hWnd_, L"Device(s) have audio enhancements option disabled.\nIn order to audio effects to work enhancements have to be enabled for each device.\nWould you like to enable it now?",
+                            auto r = MessageBoxW(hWnd_, L"Device(s) have audio enhancements option disabled.\nIn order to audio effects to work enhancements have to be enabled for device(s).\nWould you like to enable it now?",
                                                  appNameW(), MB_ICONQUESTION | MB_YESNO);
                             doEnableEnh = r == IDYES;
                         }

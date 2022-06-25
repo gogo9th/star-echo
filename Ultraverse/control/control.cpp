@@ -71,6 +71,13 @@ enum
     NI_Autostart,
 };
 
+
+static void startSetupInstalce()
+{
+    ShellExecuteW(NULL, L"runas", selfExeFilepath().data(), L"setup", NULL, SW_SHOWDEFAULT);
+}
+
+
 std::unique_ptr<MainWindow> mw_;
 static INT_PTR WINAPI dlgProc_(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -157,7 +164,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 //auto threadId = ::GetWindowThreadProcessId(wPreviousInstance, nullptr);
                 //PostThreadMessageW(threadId, WM_QUIT, 0, 0);
-                PostMessageW(wPreviousInstance, WM_QUIT, 0, 0);
+                SendMessageW(wPreviousInstance, WM_QUIT, 0, 0);
             }
 
             if (isAdmin)
@@ -171,6 +178,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
             // do not launch more instances without setup option
             return 0;
+        }
+        else
+        {
+            // not in setup and no previous instances
+            // check if any playback device has apo installed, if none call setup instance
+            bool hasDeviceInstalled = false;
+            auto devices = getPlaybackDevices();
+            for (auto & device : devices)
+            {
+                if (device->apoMfxInstalled)
+                {
+                    hasDeviceInstalled = true;
+                    break;
+                }
+            }
+            if (!hasDeviceInstalled)
+            {
+                startSetupInstalce();
+                return 0;
+            }
         }
 
         HMenu hMenu(CreatePopupMenu());
@@ -286,7 +313,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     }
                     else
                     {
-                        ShellExecuteW(NULL, L"runas", selfExeFilepath().data(), L"setup", NULL, SW_SHOWDEFAULT);
+                        startSetupInstalce();
                     }
                     break;
                 case NI_Autostart:
@@ -311,7 +338,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
         }
 
-        // turn off on exit
+        // turn off effects on exit
         if (Registry::keyExists(Settings::appPath))
         {
             Settings::setEffect(Settings::effectDisabledString());
