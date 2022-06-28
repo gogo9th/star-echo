@@ -81,7 +81,7 @@ int main(int argc, char ** argv)
         ("input,i", po::value(&input)->composing(), "Input file(s)/directory.\n- [Default: the current directory]")
         ("output,o", po::value(&output), "If the input is a directory, then output should be a directory.\nIf the input is a file, then the output should be a filename.\nIf the inputs are multiple files, then this option is ignored.\n- [Default: './FINAL' directory]")
         ("threads,t", po::value(&threads), "The number of CPU threads to run.\n- [Default: the processor's available total cores]")
-        ("keepFormat,k", po::bool_switch(&keepFormat), "Keep each output file's format to each the same as its source file's.\n- [Default: the output format is .flac]")
+        ("keepFormat,k", po::bool_switch(&keepFormat), "Keep each output file's format the same as its source file's.\n- [Default: the output format is .flac]")
         ("overwrite,w", po::bool_switch(&overwrite), "overwrite output file if it exists [Default: false]")
         ("normalize,n", po::bool_switch(&normalize), "normalize the sound to avoid rips [Default: false]")
         ("filter,f", po::value(&filters), "\
@@ -90,6 +90,8 @@ Filter(s) to be applied:\n\
    Default is 'CH,10,9' if parameters omitted\n\
  EQ,b1,b2,b3,b4,b5,b6,b7 - Equalizer,\n\
    0<=b<=24, b=12 is '0 gain'\n\
+ 3D,strength,reverb,delay - 3D effect\n\
+   0 <= parameters <= 9\n\
 Predefined equalizer filters:\n\
  BALLAD,\n\
  CLUB,\n\
@@ -196,15 +198,11 @@ Predefined equalizer filters:\n\
         return 0;
     }
 
-    FilterFabric fab;
-    if (opts_map.find("input-file") != opts_map.end())
-    {
-        opts_map["input-file"].as<std::vector<std::string>>();
-    }
     if (filters.empty())
     {
         filters.push_back("ch");
     }
+    FilterFabric fab;
     for (auto & f : filters)
     {
         if (!fab.addDesc(f, !normalize))

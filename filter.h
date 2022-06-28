@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 class Filter
 {
@@ -23,12 +24,17 @@ public:
     {
     #if defined(_DEBUG)
         static int sCount = 0;
+        std::vector<int> vl, vr;
+        vl.resize(nSamples);
+        vr.resize(nSamples);
     #endif
         for (size_t i = 0; i < nSamples; i++)
         {
             filter(lb[i], rb[i], lb_out + i, rb_out + i);
         #if defined(_DEBUG)
             ++sCount;
+            vl[i] = lb_out[i];
+            vr[i] = rb_out[i];
         #endif
         }
     }

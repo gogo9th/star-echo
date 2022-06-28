@@ -8,7 +8,21 @@
 #include "FilterFabric.h"
 #include "DNSE_CH.h"
 #include "DNSE_EQ.h"
+#include "DNSE_3D.h"
 #include "DbReduce.h"
+
+
+template<size_t size, typename charType>
+inline static std::array<int16_t, size> getInts(const std::vector<std::basic_string<charType>> & params)
+{
+    std::array<int16_t, size> values;
+    int i = 0;
+    for (auto & param : params)
+    {
+        values[i++] = std::stoi(param);
+    }
+    return values;
+}
 
 
 bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
@@ -41,10 +55,7 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
         {
             if (doDbReduce)
             {
-                filterCtors_.push_back(std::bind([] (int /*sr*/)
-                                                 {
-                                                     return std::make_unique<DbReduce>(9);
-                                                 }, std::placeholders::_1));
+                filterCtors_.push_back(std::bind([] (int /*sr*/) { return std::make_unique<DbReduce>(9); }, std::placeholders::_1));
             }
 
             int a1 = params.size() > 0 ? std::stoi(params[0]) : 10;
@@ -53,7 +64,6 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
                                              {
                                                  return std::make_unique<DNSE_CH>(a1, a2, sr);
                                              }, a1, a2, std::placeholders::_1));
-            return true;
         }
         else if (boost::iequals(filterName, "eq"))
         {
@@ -63,30 +73,43 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
                 return false;
             }
 
-            std::array<int16_t, 7> gains;
-            int i = 0;
-            for (auto & param : params)
-            {
-                gains[i++] = std::stoi(param);
-            }
-
             if (doDbReduce)
             {
-                filterCtors_.push_back(std::bind([] (int /*sr*/)
-                                                 {
-                                                     return std::make_unique<DbReduce>(6);
-                                                 }, std::placeholders::_1));
+                filterCtors_.push_back(std::bind([] (int /*sr*/) { return std::make_unique<DbReduce>(6); }, std::placeholders::_1));
             }
+
+            auto gains = getInts<7>(params);
             filterCtors_.push_back(std::bind([] (auto a1, int sr)
                                              {
                                                  return std::make_unique<DNSE_EQ>(a1, sr);
                                              }, gains, std::placeholders::_1));
-            return true;
+        }
+        else if (boost::iequals(filterName, "3d"))
+        {
+            if (params.size() < 3)
+            {
+                err() << "too few parameters for 3D filter";
+                return false;
+            }
+
+            //if (doDbReduce)
+            //{
+            //    filterCtors_.push_back(std::bind([] (int /*sr*/){ return std::make_unique<DbReduce>(6); }, std::placeholders::_1));
+            //}
+
+            auto intParams = getInts<3>(params);
+            filterCtors_.push_back(std::bind([] (auto a1, auto a2, auto a3, int sr)
+                                             {
+                                                 return std::make_unique<DNSE_3D>(a1, a2, a3, sr);
+                                             }, intParams[0], intParams[1], intParams[2], std::placeholders::_1));
         }
         else
         {
             err() << "unsupported filter " << filterName;
+            return false;
         }
+
+        return true;
     }
     catch (const std::exception & e)
     {
