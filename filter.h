@@ -44,6 +44,23 @@ public:
         global_min = -0x8000;
     }
 
+    // normalize not to rip the sound
+    void normalize(int32_t &l, int32_t &r)
+    {  if (normalizer != 1.0f)
+       {   l = (int16_t)((float)l / normalizer);
+           r = (int16_t)((float)r / normalizer);
+       }
+
+       if (l > global_max)
+           global_max = l;
+       if (l < global_min)
+           global_min = l;
+       if (r > global_max)
+           global_max = r;
+       if (r < global_min)
+           global_min = r;
+    }
+
     virtual void filter(int16_t l, const int16_t r,
                         int16_t * l_out, int16_t * r_out) = 0;
 };

@@ -62,23 +62,11 @@ DNSE_EQ::~DNSE_EQ()
 
 void DNSE_EQ::filter(int16_t l, int16_t r, int16_t * l_out, int16_t * r_out)
 {
-    // normalize not to rip the sound
-    if (normalizer != 1.0f)
-    {   l = (int16_t)((float)l / normalizer);
-        r = (int16_t)((float)r / normalizer);
-    }
 
     auto lb =  bq6l_.filter(l) + bq5l_.filter(l) + bq4l_.filter(l) + bq3l_.filter(l) + bq2l_.filter(l) + bq1l_.filter(l) + bq0l_.filter(l) + l;
     auto rb =  bq6r_.filter(r) + bq5r_.filter(r) + bq4r_.filter(r) + bq3r_.filter(r) + bq2r_.filter(r) + bq1r_.filter(r) + bq0r_.filter(r) + r;
 
-    if (lb > global_max)
-        global_max = lb;
-    if (lb < global_min)
-        global_min = lb;
-    if (rb > global_max)
-        global_max = rb;
-    if (rb < global_min)
-        global_min = rb;
+    normalize(lb, rb);
 
     *l_out = std::min(0x7FFF, std::max(-0x8000, lb));
     *r_out = std::min(0x7FFF, std::max(-0x8000, rb));

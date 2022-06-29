@@ -1,4 +1,4 @@
-SRC :=  mediaProcess.cpp q2cathedral.cpp DNSE_CH.cpp DNSE_EQ.cpp FilterFabric.cpp DbReduce.cpp
+SRC :=  mediaProcess.cpp q2cathedral.cpp FilterFabric.cpp DbReduce.cpp DNSE_CH.cpp DNSE_EQ.cpp DNSE_3D.cpp
 
 CFLAGS = -O2 -g -pthread -std=c++17
 

@@ -740,11 +740,6 @@ DNSE_CH::~DNSE_CH()
 void DNSE_CH::filter(int16_t l, int16_t r,
                      int16_t * l_out, int16_t * r_out)
 {
-    // normalize not to rip the sound
-    if (normalizer != 1.0f)
-    {   l = (int16_t)((float)l / normalizer);
-        r = (int16_t)((float)r / normalizer);
-    }
 
     auto sum = (l + r) >> 2;
 
@@ -766,14 +761,7 @@ void DNSE_CH::filter(int16_t l, int16_t r,
     r1 = (r1 + l);
     r2 = (r2 + r);
 
-    if (r1 > global_max)
-        global_max = r1;
-    if (r1 < global_min)
-        global_min = r1;
-    if (r2 > global_max)
-        global_max = r2;
-    if (r2 < global_min)
-        global_min = r2;
+    normalize(r1, r2);
 
     r1 = std::min(0x7FFF, std::max(-0x8000, r1));
     r2 = std::min(0x7FFF, std::max(-0x8000, r2));
