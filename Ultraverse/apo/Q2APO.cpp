@@ -1,7 +1,5 @@
 #include "stdafx.h"
 
-#include <audioengineextensionapo.h>
-
 #include "DNSE_CH.h"
 #include "DNSE_EQ.h"
 #include "Q2APO.h"
