@@ -5,7 +5,7 @@
 
 class Filter
 {
-   
+
 public:
     int32_t global_max, global_min;
     float normalizer;
@@ -40,25 +40,28 @@ public:
     }
 
     void reset_global_max_min()
-    {   global_max = 0x7FFF;
+    {
+        global_max = 0x7FFF;
         global_min = -0x8000;
     }
 
     // normalize not to rip the sound
-    void normalize(int32_t &l, int32_t &r)
-    {  if (normalizer != 1.0f)
-       {   l = (int16_t)((float)l / normalizer);
-           r = (int16_t)((float)r / normalizer);
-       }
+    void normalize(int32_t & l, int32_t & r)
+    {
+        if (normalizer != 1.0f)
+        {
+            l = (int16_t)((float)l / normalizer);
+            r = (int16_t)((float)r / normalizer);
+        }
 
-       if (l > global_max)
-           global_max = l;
-       if (l < global_min)
-           global_min = l;
-       if (r > global_max)
-           global_max = r;
-       if (r < global_min)
-           global_min = r;
+        if (l > global_max)
+            global_max = l;
+        if (l < global_min)
+            global_min = l;
+        if (r > global_max)
+            global_max = r;
+        if (r < global_min)
+            global_min = r;
     }
 
     virtual void filter(int16_t l, const int16_t r,

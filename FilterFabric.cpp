@@ -9,6 +9,7 @@
 #include "DNSE_CH.h"
 #include "DNSE_EQ.h"
 #include "DNSE_3D.h"
+#include "DNSE_BE.h"
 #include "DbReduce.h"
 
 
@@ -102,6 +103,20 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
                                              {
                                                  return std::make_unique<DNSE_3D>(a1, a2, a3, sr);
                                              }, intParams[0], intParams[1], intParams[2], std::placeholders::_1));
+        }
+        else if (boost::iequals(filterName, "be"))
+        {
+            if (params.size() < 2)
+            {
+                err() << "too few parameters for 3D filter";
+                return false;
+            }
+
+            auto intParams = getInts<2>(params);
+            filterCtors_.push_back(std::bind([] (auto a1, auto a2, int sr)
+                                             {
+                                                 return std::make_unique<DNSE_BE>(a1, a2, sr);
+                                             }, intParams[0], intParams[1], std::placeholders::_1));
         }
         else
         {

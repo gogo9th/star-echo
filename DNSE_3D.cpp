@@ -4,13 +4,7 @@
 
 #include "DNSE_3D.h"
 #include "utils.h"
-
-
-static int inline smulw(int a, int b)
-{
-    // 32bit multiplication overflows here and gives incorrect results for SMLAWB operations
-    return (int64_t(a) * b) >> 16;
-}
+#include "armspecific.h"
 
 
 class DNSE_3D::IIRbiquad3D
@@ -19,7 +13,7 @@ public:
     IIRbiquad3D(const int16_t(&hIIR)[4])
     {
         copy(hIIR_, hIIR);
-        copy<int64_t>(iirb_, { 0, 0 });
+        set(iirb_, 0);
     }
 
     int filter(int16_t in)
@@ -33,7 +27,7 @@ public:
 
 private:
     int16_t hIIR_[4];
-    int64_t iirb_[2];
+    int     iirb_[2];
 };
 
 class DNSE_3D::FIR4hrtf
@@ -84,9 +78,6 @@ public:
 
         r1 += smulw(4 * iir_l, fincoef_[1]) + smulw(4 * iir_r, fincoef_[2]);
         r2 += smulw(4 * iir_r, fincoef_[1]) + smulw(4 * iir_l, fincoef_[2]);
-
-        r1 = std::min(0x7FFF, std::max(-0x8000, r1));
-        r2 = std::min(0x7FFF, std::max(-0x8000, r2));
 
         return { r1, r2 };
     }
@@ -205,7 +196,7 @@ void DNSE_3D::filter(int16_t l, const int16_t r, int16_t * l_out, int16_t * r_ou
     auto [lbFIR, rbFIR] = fir_->filter(lbIIR, rbIIR);
     auto [lbRev, rbRev] = reverb_->filter(l, r, lbFIR, rbFIR);
 
-    *l_out = lbRev;
-    *r_out = rbRev;
+    *l_out = std::min(0x7FFF, std::max(-0x8000, lbRev));
+    *r_out = std::min(0x7FFF, std::max(-0x8000, rbRev));
 }
 

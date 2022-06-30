@@ -33,7 +33,13 @@ inline std::vector<std::basic_string<char_type>> stringSplit(const std::basic_st
 //
 
 template<typename T, int size>
-static const void copy(T(&dst)[size], const T(&src)[size])
+inline void copy(T(&dst)[size], const T(&src)[size])
 {
     std::copy(src, src + std::size(src), dst);
+}
+
+template<typename T, int size>
+inline void set(T(&dst)[size], T value)
+{
+    std::fill(dst, dst + std::size(dst), value);
 }
