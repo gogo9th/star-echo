@@ -7,10 +7,14 @@ static const int dbReduceCoeff[] = { 0x4000, 0x390A, 0x32D6, 0x2D4F, 0x2862, 0x2
 
 
 DbReduce::DbReduce(int db)
+    : Filter({})
 {
     db = std::max(0, std::min((int)std::size(dbReduceCoeff) - 1, db));
     gain_ = 4 * dbReduceCoeff[db];
 }
+
+void DbReduce::setSamplerate(int sampleRate)
+{}
 
 void DbReduce::filter(int16_t l, const int16_t r, int16_t * l_out, int16_t * r_out)
 {

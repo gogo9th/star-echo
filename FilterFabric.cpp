@@ -56,15 +56,15 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
         {
             if (doDbReduce)
             {
-                filterCtors_.push_back(std::bind([] (int /*sr*/) { return std::make_unique<DbReduce>(9); }, std::placeholders::_1));
+                filterCtors_.push_back(std::bind([] () { return std::make_unique<DbReduce>(9); }));
             }
 
             int a1 = params.size() > 0 ? std::stoi(params[0]) : 10;
             int a2 = params.size() > 1 ? std::stoi(params[1]) : 9;
-            filterCtors_.push_back(std::bind([] (int a1, int a2, int sr)
+            filterCtors_.push_back(std::bind([] (int a1, int a2)
                                              {
-                                                 return std::make_unique<DNSE_CH>(a1, a2, sr);
-                                             }, a1, a2, std::placeholders::_1));
+                                                 return std::make_unique<DNSE_CH>(a1, a2);
+                                             }, a1, a2));
         }
         else if (boost::iequals(filterName, "eq"))
         {
@@ -76,14 +76,14 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
 
             if (doDbReduce)
             {
-                filterCtors_.push_back(std::bind([] (int /*sr*/) { return std::make_unique<DbReduce>(6); }, std::placeholders::_1));
+                filterCtors_.push_back(std::bind([] () { return std::make_unique<DbReduce>(6); }));
             }
 
             auto gains = getInts<7>(params);
-            filterCtors_.push_back(std::bind([] (auto a1, int sr)
+            filterCtors_.push_back(std::bind([] (auto a1)
                                              {
-                                                 return std::make_unique<DNSE_EQ>(a1, sr);
-                                             }, gains, std::placeholders::_1));
+                                                 return std::make_unique<DNSE_EQ>(a1);
+                                             }, gains));
         }
         else if (boost::iequals(filterName, "3d"))
         {
@@ -99,10 +99,10 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
             //}
 
             auto intParams = getInts<3>(params);
-            filterCtors_.push_back(std::bind([] (auto a1, auto a2, auto a3, int sr)
+            filterCtors_.push_back(std::bind([] (auto a1, auto a2, auto a3)
                                              {
-                                                 return std::make_unique<DNSE_3D>(a1, a2, a3, sr);
-                                             }, intParams[0], intParams[1], intParams[2], std::placeholders::_1));
+                                                 return std::make_unique<DNSE_3D>(a1, a2, a3);
+                                             }, intParams[0], intParams[1], intParams[2]));
         }
         else if (boost::iequals(filterName, "be"))
         {
@@ -113,10 +113,10 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
             }
 
             auto intParams = getInts<2>(params);
-            filterCtors_.push_back(std::bind([] (auto a1, auto a2, int sr)
+            filterCtors_.push_back(std::bind([] (auto a1, auto a2)
                                              {
-                                                 return std::make_unique<DNSE_BE>(a1, a2, sr);
-                                             }, intParams[0], intParams[1], std::placeholders::_1));
+                                                 return std::make_unique<DNSE_BE>(a1, a2);
+                                             }, intParams[0], intParams[1]));
         }
         else
         {
@@ -133,12 +133,12 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
     return false;
 }
 
-std::vector<std::unique_ptr<Filter>> FilterFabric::create(int sampleRate) const
+std::vector<std::unique_ptr<Filter>> FilterFabric::create() const
 {
     std::vector<std::unique_ptr<Filter>> r;
     for (auto & ctor : filterCtors_)
     {
-        r.emplace_back(std::move(ctor(sampleRate)));
+        r.emplace_back(std::move(ctor()));
     }
     return r;
 }

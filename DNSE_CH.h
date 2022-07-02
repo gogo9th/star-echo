@@ -7,8 +7,10 @@
 class DNSE_CH : public Filter
 {
 public:
-    DNSE_CH(int roomSize, int gain, int sampleRate);
+    DNSE_CH(int roomSize, int gain);
     ~DNSE_CH();
+
+    void setSamplerate(int sampleRate) override;
 
     virtual void filter(int16_t l, int16_t r,
                         int16_t * l_out, int16_t * r_out) override;
@@ -23,6 +25,8 @@ private:
     class VbrFilter;
     class ToneFilter;
 
+    int roomSize_;
+    int totalGain_;
     const PresetGain * presetGain_;
 
     std::unique_ptr<ToneFilter>         toneFilter_;

@@ -595,7 +595,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                 && lockedSampleRate_ != 0)
             {
                 newFilters.push_back(std::make_unique<DbReduce>(9));
-                newFilters.push_back(std::make_unique<DNSE_CH>(chRoomSize, chGain, lockedSampleRate_));
+                newFilters.push_back(std::make_unique<DNSE_CH>(chRoomSize, chGain));
             }
             else if (chRoomSize != 0 || chGain != 0)
             {
@@ -617,7 +617,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
                 }
 
                 newFilters.push_back(std::make_unique<DbReduce>(6));
-                newFilters.push_back(std::make_unique<DNSE_EQ>(gains, lockedSampleRate_));
+                newFilters.push_back(std::make_unique<DNSE_EQ>(gains));
             }
             else
             {
@@ -628,6 +628,11 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
         {
             err() << "Unsupported filter setting " << settings;
         }
+    }
+
+    for (auto & filter : newFilters)
+    {
+        filter->setSamplerate(lockedSampleRate_);
     }
 
     {

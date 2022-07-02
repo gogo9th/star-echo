@@ -14,6 +14,8 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#undef min
+#undef max
 
 #ifndef INITGUID
     #define INITGUID

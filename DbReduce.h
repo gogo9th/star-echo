@@ -7,6 +7,8 @@ class DbReduce: public Filter
 public:
     DbReduce(int db);
 
+    void setSamplerate(int sampleRate) override;
+
     void filter(int16_t l, const int16_t r,
                 int16_t * l_out, int16_t * r_out) override;
 

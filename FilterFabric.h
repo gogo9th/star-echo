@@ -12,8 +12,8 @@ public:
     // 'eq,12,12,12,12,12,12,12
     bool addDesc(std::string desc, bool doDbReduce = true);
 
-    std::vector<std::unique_ptr<Filter>> create(int sampleRate) const;
+    std::vector<std::unique_ptr<Filter>> create() const;
 
 private:
-    std::vector<std::function<std::unique_ptr<Filter>(int)>> filterCtors_;
+    std::vector<std::function<std::unique_ptr<Filter>()>> filterCtors_;
 };

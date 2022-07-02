@@ -8,8 +8,10 @@
 class DNSE_BE: public Filter
 {
 public:
-    DNSE_BE(int level, int fc, int sampleRate);
+    DNSE_BE(int level, int fc);
     ~DNSE_BE();
+
+    void setSamplerate(int sampleRate) override;
 
     void filter(int16_t l, const int16_t r,
                 int16_t * l_out, int16_t * r_out) override;
@@ -27,6 +29,9 @@ private:
         int     iirb_[2];
     };
 
+    //
+
+    int fc_;
 
     int KBass_ExecMode_;
     int KBass_pt_ = 0;

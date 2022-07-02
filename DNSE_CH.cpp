@@ -685,26 +685,30 @@ private:
 
 //
 
-DNSE_CH::DNSE_CH(int roomSize, int gain, int sampleRate)
+DNSE_CH::DNSE_CH(int roomSize, int gain)
+    : Filter({ 32000, 44100, 48000 })
 {
-    roomSize = std::max(1, std::min(13, roomSize));
+    roomSize_ = std::max(1, std::min(13, roomSize));
+
     gain = std::max(0, std::min((int)std::size(total_gains) - 1, gain));
+    totalGain_ = total_gains[gain];
+}
 
-    auto totalGain = total_gains[gain];
-
+void DNSE_CH::setSamplerate(int sampleRate)
+{
     int srSelector = 1;
     if (sampleRate == 48000)
         srSelector = 2;
     else if (sampleRate == 32000)
         srSelector = 0;
 
-    auto presetFilter = &((PresetFilter *)preset_filters)[(roomSize - 1) * 3 + srSelector];
-    presetGain_ = &((PresetGain *)preset_gains)[(roomSize - 1)];
+    auto presetFilter = &((PresetFilter *)preset_filters)[(roomSize_ - 1) * 3 + srSelector];
+    presetGain_ = &((PresetGain *)preset_gains)[(roomSize_ - 1)];
 
     toneFilter_ = std::make_unique<ToneFilter>(presetFilter->d1c785c,
                                                presetFilter->tone,
                                                presetFilter->gains,
-                                               totalGain);
+                                               totalGain_);
     dsFilter_ = std::make_unique<DelaySplitFilter>(4159, presetFilter->gains, presetFilter->er_delays);
     er_ap1_ = std::make_unique<APFilter>(std::min(presetFilter->er_ap1_delay, 631), presetFilter->er_ap1_gain);
     er_ap2_ = std::make_unique<APFilter>(std::min(presetFilter->er_ap2_delay, 739), presetFilter->er_ap2_gain);

@@ -2,20 +2,26 @@
 #include "utils.h"
 #include "DNSE_EQ.h"
 
-DNSE_EQ::DNSE_EQ(const std::array<int16_t, 7> & gains, int sampleRate)
+
+static const int16_t eqGains[25] = { -0x17F6, -0x16FB, -0x15E1, -0x14A5, -0x1343, -0x11B5, -0xFF6, -0xE01, -0xBCF, -0x959, -0x695, -0x37B,
+                                    0,
+                                    0x3E8, 0x849, 0xD34, 0x12B7, 0x18E8, 0x1FD9, 0x27A4, 0x3061, 0x3A30, 0x4531, 0x518A, 0x5F65
+};
+
+DNSE_EQ::DNSE_EQ(const std::array<int16_t, 7> & gains)
+    : Filter({ 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000 })
 {
-    static const int16_t eqGains[25] = { -0x17F6, -0x16FB, -0x15E1, -0x14A5, -0x1343, -0x11B5, -0xFF6, -0xE01, -0xBCF, -0x959, -0x695, -0x37B,
-                                        0,
-                                        0x3E8, 0x849, 0xD34, 0x12B7, 0x18E8, 0x1FD9, 0x27A4, 0x3061, 0x3A30, 0x4531, 0x518A, 0x5F65
-    };
 
     int iGain = 0;
-    for (auto & g : gains)
+    for (auto g : gains)
     {
         auto ng = std::max<int16_t>(0, std::min<int16_t>(int16_t(std::size(eqGains)) - 1, g));
         gains_[iGain++] = eqGains[ng];
     }
+}
 
+void DNSE_EQ::setSamplerate(int sampleRate)
+{
     int srIndex;
     if (sampleRate == 8000 || sampleRate == 11025 || sampleRate == 12000)
     {

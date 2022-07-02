@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cassert>
 #include <vector>
 
 class Filter
@@ -9,14 +10,23 @@ class Filter
 public:
     int32_t global_max, global_min;
     float normalizer;
+
     virtual ~Filter() = default;
 
-    Filter()
+    explicit Filter(std::vector<int> && sampleRates)
+        : sampleRates_(sampleRates)
     {
         global_max = 0x7FFF;
         global_min = -0x8000;
         normalizer = 1.0f;
     }
+
+    virtual void setSamplerate(int sampleRate) = 0;
+
+    virtual void filter(int16_t l, const int16_t r,
+                        int16_t * l_out, int16_t * r_out) = 0;
+
+    //
 
     void filter(const int16_t * lb, const int16_t * rb,
                 int16_t * lb_out, int16_t * rb_out,
@@ -64,6 +74,29 @@ public:
             global_min = r;
     }
 
-    virtual void filter(int16_t l, const int16_t r,
-                        int16_t * l_out, int16_t * r_out) = 0;
+    int agreeSamplerate(int sr)
+    {
+        if (sampleRates_.empty())
+            return sr;
+
+        int nearestHigh = std::numeric_limits<int>::max();
+        int maxAvailable = 0;
+        for (auto rate : sampleRates_)
+        {
+            if (sr == rate)
+            {
+                return rate;
+            }
+
+            if (rate > sr && rate < nearestHigh)
+            {
+                nearestHigh = rate;
+            }
+            maxAvailable = std::max(maxAvailable, rate);
+        }
+        return nearestHigh != std::numeric_limits<int>::max() ? nearestHigh : maxAvailable;
+    }
+    
+protected:
+    std::vector<int> sampleRates_;
 };

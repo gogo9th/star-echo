@@ -188,16 +188,16 @@ std::string MediaProcess::operator()(const FileItem & item) const
 
 void MediaProcess::process(const FileItem & item) const
 {
-   std::vector<float> normalizers;
-   while (true)
-   {
-      if (!do_process(item, normalizers) || !item.normalize)
-          break;
-   }
+    std::vector<float> normalizers;
+    while (true)
+    {
+        if (!do_process(item, normalizers) || !item.normalize)
+            break;
+    }
 }
 
 
-bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normalizers) const
+bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normalizers) const
 {
     //#if defined(_DEBUG)
     //    msg() << item.output.string();
@@ -252,7 +252,6 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
     }
     if (!audioStream) throw MPError("no audio stream is found");
 
-    // returns AVCodecContext*
     auto audioCodecIn = createCodec(audioStream->codecpar);
     const int srcChannelLayout = audioCodecIn->channel_layout;
 
@@ -260,23 +259,32 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
 
     // *** Set up the input format ctx ***
 
+    auto filters = filterFab_.create();
+
+
     int filterSampleRate = audioCodecIn->sample_rate;
+
 
     // SwrContext contains the audio file's sound quality parameters, such as the audio channel left/right flags (mono/stereo), 
     //  sampling format (e.g., 16 bits), and sampling rate (e.g., 44kHz)
     scoped_ptr<SwrContext> swr_in(nullptr, [] (SwrContext * d) { swr_free(&d); });
-
     {
-        if (filterSampleRate <= 32000) filterSampleRate = 32000;
-        else if (filterSampleRate >= 48000) filterSampleRate = 48000;
-        else if (filterSampleRate != 44100) filterSampleRate = 44100;
+        for (auto & filter : filters)
+        {
+            filterSampleRate = filter->agreeSamplerate(filterSampleRate);
+        }
+
+        for (auto & filter : filters)
+        {
+            filter->setSamplerate(filterSampleRate);
+        }
 
         /* Force the input audio channel to have front left & right */
         /* Force the sampling format to be signed-16-bit-planar */
         /* Force the sampling rate to be 32k frames-per-sec (kHz), 44fps, or 48fps */
         if (audioCodecIn->channel_layout != (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
             || audioCodecIn->sample_fmt != AV_SAMPLE_FMT_S16P
-            || (audioCodecIn->sample_rate != 32000 && audioCodecIn->sample_rate != 44100 && audioCodecIn->sample_rate != 48000))
+            || (audioCodecIn->sample_rate != filterSampleRate))
         {   // Arguments: (swr_ctx, out, out, out, in, in, in, log_offset, log_ctx)
             swr_in.reset(swr_alloc_set_opts(NULL,
                                             AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, AV_SAMPLE_FMT_S16P, filterSampleRate,
@@ -309,7 +317,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
         throw MPError("failed to open output media", r);
 
     // Tentatively set up the output audio codec paramaters based on the input audio codec parameters
-    AVCodecParameters params{};
+    AVCodecParameters params {};
     params.channels = 2;
     params.channel_layout = AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT;
     params.sample_rate = filterSampleRate;
@@ -422,8 +430,6 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
         pts += samples;
         return r;
     };
-
-    auto filters = filterFab_.create(audioCodecIn->sample_rate);
 
     for (int i = 0; i < normalizers.size(); i++)
         filters[i]->normalizer = normalizers[i];
@@ -680,36 +686,39 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float>& normali
         int i = 0;
         bool is_initial = !normalizers.size();
         for (auto filter = filters.begin(); normalize && filter != filters.end(); ++filter)
-        {   
+        {
             float factor_max = 1.0f, factor_min = 1.0f;
 
             if (is_initial)
-               normalizers.push_back((*filter)->normalizer);
+                normalizers.push_back((*filter)->normalizer);
 
             // normalize only the first ripping filter 
             if (ripped)
-            {  
-               continue;
+            {
+                continue;
             }
             // compute this processing round's max & min normalization factor
             if ((*filter)->global_max != 0x7FFF)
-            {   factor_max = (float)((*filter)->global_max) / (float)0x7FFF;
+            {
+                factor_max = (float)((*filter)->global_max) / (float)0x7FFF;
             }
             if ((*filter)->global_min != -0x8000)
-            {   factor_min = (float)((*filter)->global_min) / (float)(-0x8000);
+            {
+                factor_min = (float)((*filter)->global_min) / (float)(-0x8000);
             }
             // compute (or update) the normalization factor  
             if (factor_max != 1.0f || factor_min != 1.0f)
-            {  ripped = true;
-               normalizers[i] *= std::max(factor_max, factor_min);
- 
-               msg() << "- Normalizing Filter[" << i << "]: Division Factor = " << normalizers[i];
+            {
+                ripped = true;
+                normalizers[i] *= std::max(factor_max, factor_min);
+
+                msg() << "- Normalizing Filter[" << i << "]: Division Factor = " << normalizers[i];
             }
             i++;
         }
         // save the music file only if there is no ripping sound
         if (!normalize || !ripped)
-           std::filesystem::rename(tempOut, item.output);
+            std::filesystem::rename(tempOut, item.output);
     }
     return r == 0 && ripped;
 }
