@@ -30,19 +30,6 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
 {
     try
     {
-        if (boost::iequals(desc, "ballad"))
-        {
-            desc = "eq,12,10,16,12,14,12,10";
-        }
-        else if (boost::iequals(desc, "club"))
-        {
-            desc = "eq,19,17,9,7,15,19,18";
-        }
-        else if (boost::iequals(desc, "rnb"))
-        {
-            desc = "eq,13,19,15,13,13,15,11";
-        }
-
         auto params = stringSplit(desc, ",");
         if (params.empty())
         {
@@ -92,11 +79,6 @@ bool FilterFabric::addDesc(std::string desc, bool doDbReduce)
                 err() << "too few parameters for 3D filter";
                 return false;
             }
-
-            //if (doDbReduce)
-            //{
-            //    filterCtors_.push_back(std::bind([] (int /*sr*/){ return std::make_unique<DbReduce>(6); }, std::placeholders::_1));
-            //}
 
             auto intParams = getInts<3>(params);
             filterCtors_.push_back(std::bind([] (auto a1, auto a2, auto a3)

@@ -92,10 +92,20 @@ Filter(s) to be applied:\n\
    0<=b<=24, b=12 is '0 gain'\n\
  3D,strength,reverb,delay - 3D effect\n\
    0 <= parameters <= 9\n\
-Predefined equalizer filters:\n\
- BALLAD,\n\
- CLUB,\n\
- RnB \
+ BE,level,cutoff - Bass enhancement\n\
+   1 <= parameters <= 15\n\
+Predefined filters:\n\
+ studio,\n\
+ rock,\n\
+ classical,\n\
+ jazz,\n\
+ dance,\n\
+ ballad,\n\
+ club,\n\
+ RnB,\n\
+ cafe,\n\
+ concert,\n\
+ church\n\
 ")
 ;
     po::positional_options_description posd;
@@ -202,10 +212,71 @@ Predefined equalizer filters:\n\
     {
         filters.push_back("ch");
     }
+
     FilterFabric fab;
-    for (auto & f : filters)
+    for (const auto & desc : filters)
     {
-        if (!fab.addDesc(f, !normalize))
+        bool r;
+        if (boost::iequals(desc, "studio"))
+        {
+            r = fab.addDesc("eq,12,14,12,14,12,12,14", !normalize)
+                && fab.addDesc("3d,6,1,16", !normalize)
+                && fab.addDesc("be,4,0", !normalize);
+        }
+        else if (boost::iequals(desc, "rock"))
+        {
+            r = fab.addDesc("eq,15,14,7,5,15,17,15", !normalize)
+                && fab.addDesc("3d,6,1,16", !normalize)
+                && fab.addDesc("be,8,2", !normalize);
+        }
+        else if (boost::iequals(desc, "classical"))
+        {
+            r = fab.addDesc("eq,11,11,11,13,15,15,16", !normalize)
+                && fab.addDesc("3d,8,1,16", !normalize)
+                && fab.addDesc("be,4,0", !normalize);
+        }
+        else if (boost::iequals(desc, "jazz"))
+        {
+            r = fab.addDesc("eq,12,10,16,12,14,12,10", !normalize)
+                && fab.addDesc("3d,8,1,16", !normalize)
+                && fab.addDesc("be,4,0", !normalize);
+        }
+        else if (boost::iequals(desc, "dance"))
+        {
+            r = fab.addDesc("eq,13,16,7,5,14,13,9", !normalize)
+                && fab.addDesc("3d,8,2,16", !normalize)
+                && fab.addDesc("be,10,0", !normalize);
+        }
+        else if (boost::iequals(desc, "ballad"))
+        {
+            r = fab.addDesc("eq,12,10,16,12,14,12,10", !normalize);
+        }
+        else if (boost::iequals(desc, "club"))
+        {
+            r = fab.addDesc("eq,19,17,9,7,15,19,18", !normalize);
+        }
+        else if (boost::iequals(desc, "rnb"))
+        {
+            r = fab.addDesc("eq,13,19,15,13,13,15,11", !normalize);
+        }
+        else if (boost::iequals(desc, "cafe"))
+        {
+            r = fab.addDesc("ch,1,7", !normalize);
+        }
+        else if (boost::iequals(desc, "concert"))
+        {
+            r = fab.addDesc("ch,5,7", !normalize);
+        }
+        else if (boost::iequals(desc, "church"))
+        {
+            r = fab.addDesc("ch,10,9", !normalize);
+        }
+        else
+        {
+            r = fab.addDesc(desc, !normalize);
+        }
+
+        if (!r)
         {
             return -1;
         }
