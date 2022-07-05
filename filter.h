@@ -38,7 +38,7 @@ public:
         vl.resize(nSamples);
         vr.resize(nSamples);
     #endif
-        for (size_t i = 0; i < nSamples; i++)
+        for (int i = 0; i < nSamples; i++)
         {
             filter(lb[i], rb[i], lb_out + i, rb_out + i);
         #if defined(_DEBUG)

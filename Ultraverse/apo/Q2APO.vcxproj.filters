@@ -16,6 +16,15 @@
     <ClCompile Include="..\..\DbReduce.cpp">
       <Filter>Q2</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\DNSE_3D.cpp">
+      <Filter>Q2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\DNSE_BE.cpp">
+      <Filter>Q2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\FilterFabric.cpp">
+      <Filter>Q2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Q2APO.h" />
@@ -34,6 +43,15 @@
       <Filter>Q2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\DbReduce.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DNSE_3D.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DNSE_BE.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\FilterFabric.h">
       <Filter>Q2</Filter>
     </ClInclude>
   </ItemGroup>

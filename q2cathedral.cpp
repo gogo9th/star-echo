@@ -13,6 +13,7 @@ extern "C" {
 #include <filesystem>
 
 #include "log.hpp"
+#include "utils.h"
 #include "q2cathedral.h"
 #include "threaded.h"
 #include "mediaProcess.h"
@@ -213,74 +214,17 @@ Predefined filters:\n\
         filters.push_back("ch");
     }
 
-    FilterFabric fab;
+    FilterFabric fab(!normalize);
     for (const auto & desc : filters)
     {
-        bool r;
-        if (boost::iequals(desc, "studio"))
-        {
-            r = fab.addDesc("eq,12,14,12,14,12,12,14", !normalize)
-                && fab.addDesc("3d,6,1,16", !normalize)
-                && fab.addDesc("be,4,0", !normalize);
-        }
-        else if (boost::iequals(desc, "rock"))
-        {
-            r = fab.addDesc("eq,15,14,7,5,15,17,15", !normalize)
-                && fab.addDesc("3d,6,1,16", !normalize)
-                && fab.addDesc("be,8,2", !normalize);
-        }
-        else if (boost::iequals(desc, "classical"))
-        {
-            r = fab.addDesc("eq,11,11,11,13,15,15,16", !normalize)
-                && fab.addDesc("3d,8,1,16", !normalize)
-                && fab.addDesc("be,4,0", !normalize);
-        }
-        else if (boost::iequals(desc, "jazz"))
-        {
-            r = fab.addDesc("eq,12,10,16,12,14,12,10", !normalize)
-                && fab.addDesc("3d,8,1,16", !normalize)
-                && fab.addDesc("be,4,0", !normalize);
-        }
-        else if (boost::iequals(desc, "dance"))
-        {
-            r = fab.addDesc("eq,13,16,7,5,14,13,9", !normalize)
-                && fab.addDesc("3d,8,2,16", !normalize)
-                && fab.addDesc("be,10,0", !normalize);
-        }
-        else if (boost::iequals(desc, "ballad"))
-        {
-            r = fab.addDesc("eq,12,10,16,12,14,12,10", !normalize);
-        }
-        else if (boost::iequals(desc, "club"))
-        {
-            r = fab.addDesc("eq,19,17,9,7,15,19,18", !normalize);
-        }
-        else if (boost::iequals(desc, "rnb"))
-        {
-            r = fab.addDesc("eq,13,19,15,13,13,15,11", !normalize);
-        }
-        else if (boost::iequals(desc, "cafe"))
-        {
-            r = fab.addDesc("ch,1,7", !normalize);
-        }
-        else if (boost::iequals(desc, "concert"))
-        {
-            r = fab.addDesc("ch,5,7", !normalize);
-        }
-        else if (boost::iequals(desc, "church"))
-        {
-            r = fab.addDesc("ch,10,9", !normalize);
-        }
-        else
-        {
-            r = fab.addDesc(desc, !normalize);
-        }
+        auto r = fab.addDesc(stringToWstring(desc));
 
         if (!r)
         {
             return -1;
         }
     }
+
 #if defined(_DEBUG)
     av_log_set_level(AV_LOG_WARNING);
     //av_log_set_level(99);

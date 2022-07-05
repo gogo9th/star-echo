@@ -1,8 +1,6 @@
 
 #include "framework.h"
 
-#include <Shellapi.h>
-
 #include "control.h"
 #include "MainWindow.h"
 #include "NotifyIcon.h"
@@ -13,6 +11,8 @@
 #include "common/settings.h"
 
 #include "../apo/Q2APO.h"
+
+#include <Shellapi.h>
 #include <control/mmDevices.h>
 
 //#include <Shlobj.h>
@@ -54,22 +54,42 @@ static const std::wstring selfExeFilepath()
 
 //
 
-static const wchar_t operaHallMode[] = L"ch,10,10";
-static const wchar_t operaHall2Mode[] = L"eq,13,19,15,13,13,15,11;ch,10,10";
-static const wchar_t liveCafeMode[] = L"ch,13,10";
-static const wchar_t rnbMode[] = L"eq,13,19,15,13,13,15,11";
-
 enum
 {
-    NI_OperaHall = WM_USER + 10,
-    NI_OperaHall2,
-    NI_LiveCafe,
+    NI_BEGIN = WM_USER + 10,
+    NI_Studio,
+    NI_Rock,
+    NI_Classical,
+    NI_Jazz,
+    NI_Dance,
+    NI_Ballad,
+    NI_Club,
     NI_RnB,
+    NI_Cafe,
+    NI_Concert,
+    NI_Church,
     NI_Disable,
     NI_Enable,
     NI_Setup,
     NI_Autostart,
+    NI_TOPITEM = NI_Studio,
+    NI_BOTITEM = NI_Disable,
 };
+
+static const std::map<int, const wchar_t *> modes_ = {
+    { NI_Studio,      L"studio" },
+    { NI_Rock,        L"rock" },
+    { NI_Classical,   L"classical" },
+    { NI_Jazz,        L"jazz" },
+    { NI_Dance,       L"dance" },
+    { NI_Ballad,      L"ballad" },
+    { NI_Club,        L"club" },
+    { NI_RnB,         L"rnb" },
+    { NI_Cafe,        L"cafe" },
+    { NI_Concert,     L"concert" },
+    { NI_Church,      L"church" },
+};
+
 
 
 static void startSetupInstalce()
@@ -204,10 +224,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         if (Registry::keyExists(Settings::appPath))
         {
-            InsertMenuW(hMenu, NI_OperaHall, MF_BYCOMMAND, NI_OperaHall, L"Cathedral");
-            //InsertMenuW(hMenu, NI_OperaHall2, MF_BYCOMMAND, NI_OperaHall2, L"Opera Hall 2");
-            InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe, L"Live Cafe");
-            InsertMenuW(hMenu, NI_RnB, MF_BYCOMMAND, NI_RnB, L"R&&B");
+            InsertMenuW(hMenu, NI_Studio,   MF_BYCOMMAND, NI_Studio,    L"Studio");
+            InsertMenuW(hMenu, NI_Rock,     MF_BYCOMMAND, NI_Rock,      L"Rock");
+            InsertMenuW(hMenu, NI_Classical,MF_BYCOMMAND, NI_Classical, L"Classical");
+            InsertMenuW(hMenu, NI_Jazz,     MF_BYCOMMAND, NI_Jazz,      L"Jazz");
+            InsertMenuW(hMenu, NI_Dance,    MF_BYCOMMAND, NI_Dance,     L"Dance");
+            InsertMenuW(hMenu, NI_Ballad,   MF_BYCOMMAND, NI_Ballad,    L"Ballad");
+            InsertMenuW(hMenu, NI_Club,     MF_BYCOMMAND, NI_Club,      L"Club");
+            InsertMenuW(hMenu, NI_RnB,      MF_BYCOMMAND, NI_RnB,       L"R&&B");
+            InsertMenuW(hMenu, NI_Cafe,     MF_BYCOMMAND, NI_Cafe,      L"Cafe");
+            InsertMenuW(hMenu, NI_Concert,  MF_BYCOMMAND, NI_Concert,   L"Concert");
+            InsertMenuW(hMenu, NI_Church,   MF_BYCOMMAND, NI_Church,    L"Church");
+
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
             InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Off");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
@@ -215,30 +243,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             auto current = Settings::currentEffect();
             if (!Settings::isEffectEnabled(current))
             {
-                CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Disable, MF_BYCOMMAND);
+                CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Disable, MF_BYCOMMAND);
             }
             else
             {
-                if (current == operaHallMode)
+                int currentMode = -1;
+                for (auto & [k,v] : modes_)
                 {
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
+                    if (current == v)
+                    {
+                        currentMode = k;
+                        CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, k, MF_BYCOMMAND);
+                        break;
+                    }
                 }
-                else if (current == operaHall2Mode)
+
+                if (currentMode < 0)
                 {
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall2, MF_BYCOMMAND);
-                }
-                else if (current == liveCafeMode)
-                {
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
-                }
-                else if (current == rnbMode)
-                {
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_RnB, MF_BYCOMMAND);
-                }
-                else
-                {
-                    Settings::setEffect(operaHallMode);
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
+                    Settings::setEffect(std::wstring(modes_.at(NI_Church)));
+                    CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Church, MF_BYCOMMAND);
                 }
             }
         }
@@ -284,57 +307,52 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         MSG msg;
         while (GetMessage(&msg, nullptr, 0, 0))
         {
-            switch (msg.message)
+            auto im = modes_.find(msg.message);
+            if (im != modes_.end())
             {
-                case NI_OperaHall:
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall, MF_BYCOMMAND);
-                    Settings::setEffect(operaHallMode);
-                    break;
-                case NI_OperaHall2:
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_OperaHall2, MF_BYCOMMAND);
-                    Settings::setEffect(operaHall2Mode);
-                    break;
-                case NI_LiveCafe:
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_LiveCafe, MF_BYCOMMAND);
-                    Settings::setEffect(liveCafeMode);
-                    break;
-                case NI_RnB:
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_RnB, MF_BYCOMMAND);
-                    Settings::setEffect(rnbMode);
-                    break;
-                case NI_Disable:
-                    CheckMenuRadioItem(hMenu, NI_OperaHall, NI_Disable, NI_Disable, MF_BYCOMMAND);
-                    Settings::setEffect(Settings::effectDisabledString());
-                    break;
-                case NI_Setup:
-                    if (isAdmin)
-                    {
-                        mw_->show();
-                    }
-                    else
-                    {
-                        startSetupInstalce();
-                    }
-                    break;
-                case NI_Autostart:
+                CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, im->first, MF_BYCOMMAND);
+                Settings::setEffect(im->second);
+            }
+            else
+            {
+                switch (msg.message)
                 {
-                    auto current = GetMenuState(hMenu, NI_Autostart, MF_BYCOMMAND | MF_CHECKED);
-                    current = !current;
-                    if (current)
-                    {
-                        Settings::setAutostart(appNameW(), selfExeFilepath());
-                    }
-                    else
-                    {
-                        Settings::removeAutostart(appNameW());
-                    }
-                    CheckMenuItem(hMenu, NI_Autostart, MF_BYCOMMAND | (current ? MF_CHECKED : MF_UNCHECKED));
-                    break;
-                }
+                    case NI_Disable:
+                        CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Disable, MF_BYCOMMAND);
+                        Settings::setEffect(Settings::effectDisabledString());
+                        break;
 
-                default:
-                    TranslateMessage(&msg);
-                    DispatchMessageW(&msg);
+                    case NI_Setup:
+                        if (isAdmin)
+                        {
+                            mw_->show();
+                        }
+                        else
+                        {
+                            startSetupInstalce();
+                        }
+                        break;
+
+                    case NI_Autostart:
+                    {
+                        auto current = GetMenuState(hMenu, NI_Autostart, MF_BYCOMMAND | MF_CHECKED);
+                        current = !current;
+                        if (current)
+                        {
+                            Settings::setAutostart(appNameW(), selfExeFilepath());
+                        }
+                        else
+                        {
+                            Settings::removeAutostart(appNameW());
+                        }
+                        CheckMenuItem(hMenu, NI_Autostart, MF_BYCOMMAND | (current ? MF_CHECKED : MF_UNCHECKED));
+                        break;
+                    }
+
+                    default:
+                        TranslateMessage(&msg);
+                        DispatchMessageW(&msg);
+                }
             }
         }
 

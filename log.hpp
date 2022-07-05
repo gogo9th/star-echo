@@ -25,6 +25,12 @@ public:
 		return *this;
 	}
 
+	//Log & operator<<(const std::wstring & s)
+	//{
+	//	os_ << wstringToString(v);
+	//	return *this;
+	//}
+
 private:
 	std::ostream & os_;
 	inline static std::mutex mtx_;

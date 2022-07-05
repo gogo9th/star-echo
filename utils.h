@@ -30,6 +30,20 @@ inline std::vector<std::basic_string<char_type>> stringSplit(const std::basic_st
     return stringSplit(str, std::basic_string_view<char_type>(delimiter, size - 1));
 }
 
+inline std::wstring stringToWstring(const std::string & s)
+{
+    return std::wstring(s.begin(), s.end());
+}
+inline std::string wstringToString(const std::wstring & s)
+{
+    std::string r;
+    for (auto & c : s)
+    {
+        r.push_back((char)c);
+    }
+    return r;
+}
+
 //
 
 template<typename T, int size>

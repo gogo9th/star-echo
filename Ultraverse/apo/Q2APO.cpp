@@ -9,7 +9,8 @@
 #include "common/registry.h"
 #include "common/settings.h"
 #include "common/error.h"
-#include <DbReduce.h>
+#include "DbReduce.h"
+#include "FilterFabric.h"
 
 
 #pragma comment(lib, "legacy_stdio_definitions.lib")    // _vsnwprintf
@@ -580,56 +581,13 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
 
     std::vector<std::unique_ptr<Filter>> newFilters;
 
-    auto filters = stringSplit(settings, L";");
-    for (auto & setting : filters)
+    FilterFabric fab;
+    if (!fab.addDesc(settings))
     {
-        auto params = stringSplit(setting, L",");
-
-        if (params[0] == L"ch")
-        {
-            auto chRoomSize = params.size() > 1 ? std::stoi(params[1]) : 0;
-            auto chGain = params.size() > 2 ? std::stoi(params[2]) : 0;
-
-            if (chRoomSize >= 1 && chRoomSize <= 13
-                && chGain >= 0 && chGain <= 11
-                && lockedSampleRate_ != 0)
-            {
-                newFilters.push_back(std::make_unique<DbReduce>(9));
-                newFilters.push_back(std::make_unique<DNSE_CH>(chRoomSize, chGain));
-            }
-            else if (chRoomSize != 0 || chGain != 0)
-            {
-                err() << "Invalig CH filter settings: " << chRoomSize << ", " << chGain;
-            }
-        }
-        else if (params[0] == L"eq")
-        {
-            params.erase(params.begin());
-
-            if (params.size() >= 7)
-            {
-                std::array<int16_t, 7> gains;
-
-                int i = 0;
-                for (auto & param : params)
-                {
-                    gains[i++] = std::stoi(param);
-                }
-
-                newFilters.push_back(std::make_unique<DbReduce>(6));
-                newFilters.push_back(std::make_unique<DNSE_EQ>(gains));
-            }
-            else
-            {
-                err() << "Too few parameters for EQ filter";
-            }
-        }
-        else
-        {
-            err() << "Unsupported filter setting " << settings;
-        }
+        err() << "Unsupported filter setting " << settings;
     }
 
+    newFilters = fab.create();
     for (auto & filter : newFilters)
     {
         filter->setSamplerate(lockedSampleRate_);

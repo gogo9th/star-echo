@@ -78,6 +78,13 @@ public:
         return *this;
     }
 
+    template<>
+    Log & operator <<(const std::string & v)
+    {
+        os_ << std::wstring(v.begin() ,v.end());
+        return *this;
+    }
+
 private:
     std::wostringstream os_;
 };

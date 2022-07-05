@@ -32,5 +32,5 @@ private:
     void process(const FileItem & item) const;
     bool do_process(const FileItem & item, std::vector<float>& normalizers) const;
 
-    FilterFabric   filterFab_;
+    FilterFabric filterFab_;
 };
