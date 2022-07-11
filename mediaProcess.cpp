@@ -60,7 +60,9 @@ protected:
 
 //
 
-static scoped_ptr<AVCodecContext> createCodec(AVCodecParameters * codecpar, bool output = false)
+static scoped_ptr<AVCodecContext> createCodec(AVCodecParameters * codecpar,
+                                              AVSampleFormat desiredFormat = AV_SAMPLE_FMT_NONE,
+                                              bool output = false)
 {
     if (!codecpar)
     {
@@ -81,9 +83,54 @@ static scoped_ptr<AVCodecContext> createCodec(AVCodecParameters * codecpar, bool
         throw MPError("avcodec_parameters_to_context", r);
 
     // workaround to merge default codec format
-    if (codecpar->format < 0)
+    if (codecpar->format == AV_SAMPLE_FMT_NONE)
     {
-        ctx->sample_fmt = codec->sample_fmts[0];
+        if (desiredFormat == AV_SAMPLE_FMT_NONE)
+        {
+            ctx->sample_fmt = codec->sample_fmts[0];
+        }
+        else
+        {
+            AVSampleFormat suitable = AV_SAMPLE_FMT_NONE;
+            AVSampleFormat suitableP = AV_SAMPLE_FMT_NONE;
+            auto * fmt = codec->sample_fmts;
+            while (*fmt != AV_SAMPLE_FMT_NONE)
+            {
+                if (*fmt == desiredFormat)
+                {
+                    ctx->sample_fmt = *fmt;
+                    break;
+                }
+                if (av_get_bytes_per_sample(*fmt) == av_get_bytes_per_sample(desiredFormat))
+                {
+                    if (av_sample_fmt_is_planar(*fmt) == av_sample_fmt_is_planar(desiredFormat))
+                    {
+                        suitableP = *fmt;
+                    }
+                    else
+                    {
+                        suitable = *fmt;
+                    }
+                }
+                ++fmt;
+            }
+
+            if (ctx->sample_fmt == AV_SAMPLE_FMT_NONE)
+            {
+                if (suitableP != AV_SAMPLE_FMT_NONE)
+                {
+                    ctx->sample_fmt = suitableP;
+                }
+                else if (suitable != AV_SAMPLE_FMT_NONE)
+                {
+                    ctx->sample_fmt = suitable;
+                }
+                else
+                {
+                    ctx->sample_fmt = codec->sample_fmts[0];
+                }
+            }
+        }
     }
     if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
@@ -264,6 +311,9 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
     int filterSampleRate = audioCodecIn->sample_rate;
 
+    static_assert(std::is_same_v<Filter::sample_t, int16_t> || std::is_same_v<Filter::sample_t, int32_t>, "Incompatible internal type");
+    const auto filterFormat = std::is_same_v<Filter::sample_t, int16_t> ? AV_SAMPLE_FMT_S16P : AV_SAMPLE_FMT_S32P;
+
 
     // SwrContext contains the audio file's sound quality parameters, such as the audio channel left/right flags (mono/stereo), 
     //  sampling format (e.g., 16 bits), and sampling rate (e.g., 44kHz)
@@ -280,14 +330,15 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         }
 
         /* Force the input audio channel to have front left & right */
-        /* Force the sampling format to be signed-16-bit-planar */
-        /* Force the sampling rate to be 32k frames-per-sec (kHz), 44fps, or 48fps */
+        /* Force the sampling format to be signed-X-bit-planar */
+        /* Force the sampling rate to be agreed sample rate */
+
         if (audioCodecIn->channel_layout != (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
-            || audioCodecIn->sample_fmt != AV_SAMPLE_FMT_S16P
+            || audioCodecIn->sample_fmt != filterFormat
             || (audioCodecIn->sample_rate != filterSampleRate))
         {   // Arguments: (swr_ctx, out, out, out, in, in, in, log_offset, log_ctx)
             swr_in.reset(swr_alloc_set_opts(NULL,
-                                            AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, AV_SAMPLE_FMT_S16P, filterSampleRate,
+                                            AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, filterFormat, filterSampleRate,
                                             audioCodecIn->channel_layout, audioCodecIn->sample_fmt, audioCodecIn->sample_rate,
                                             0, NULL));
             if (!swr_in) throw MPError("swr_alloc_set_opts failed");
@@ -322,12 +373,24 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     params.channel_layout = AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT;
     params.sample_rate = filterSampleRate;
     params.bit_rate = audioCodecIn->bit_rate;
-    params.codec_id = avfmt_out->oformat->audio_codec;
     params.codec_type = AVMEDIA_TYPE_AUDIO;
-    params.format = -1;
+    params.format = AV_SAMPLE_FMT_NONE;
+    params.codec_id = avfmt_out->oformat->audio_codec;
+
+    if (params.codec_id == AV_CODEC_ID_FIRST_AUDIO) // that is pcm
+    {
+        if (std::is_same_v<Filter::sample_t, int16_t>)
+        {
+            params.codec_id = AV_CODEC_ID_PCM_S16LE;
+        }
+        else if (std::is_same_v<Filter::sample_t, int32_t>)
+        {
+            params.codec_id = AV_CODEC_ID_PCM_S32LE;
+        }
+    }
 
     // returns AVCodecContext*
-    auto audioCodecOut = createCodec(&params, true);
+    auto audioCodecOut = createCodec(&params, filterFormat, true);
 
     if (audioCodecOut->frame_size == 0)
     {
@@ -385,12 +448,12 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
     scoped_ptr<SwrContext> swr_out(nullptr, [] (SwrContext * d) { swr_free(&d); });
 
-    // If the output codec parameter is not what we want (s16p), then create awr_out as a format converter
-    if (audioCodecOut->sample_fmt != AV_SAMPLE_FMT_S16P)
+    // If the output codec parameter is not what we want, then create awr_out as a format converter
+    if (audioCodecOut->sample_fmt != filterFormat)
     {
         swr_out.reset(swr_alloc_set_opts(NULL,
                                          AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, audioCodecOut->sample_fmt, filterSampleRate,
-                                         AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, AV_SAMPLE_FMT_S16P, filterSampleRate,
+                                         AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, filterFormat, filterSampleRate,
                                          0, NULL));
         if (!swr_out) throw MPError("swr_alloc_set_opts failed");
         if ((r = swr_init(swr_out)) != 0) throw MPError("input converter init failed", r);
@@ -420,8 +483,8 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                                  [] (auto * d) { av_audio_fifo_free(d); });
     if (!fifo) throw MPError("failed to allocate fifo");
 
-    std::vector<int16_t> lb, rb;
-    std::vector<int16_t> lbOut, rbOut;
+    std::vector<Filter::sample_t> lb, rb;
+    std::vector<Filter::sample_t> lbOut, rbOut;
 
     int pts = 0;
     auto Pts = [&pts] (int samples)
@@ -514,8 +577,8 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
             }
 
             // Our filter expects the input to be signed a stereo 16-bit planar layout, so our data type is int16_t 
-            int16_t * lbIn;
-            int16_t * rbIn;
+            Filter::sample_t * lbIn;
+            Filter::sample_t * rbIn;
 
             // This is the input music file's decoded raw frame
             int nb_samples = frame_in->nb_samples;
@@ -555,8 +618,8 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
             // If the input music file is in the format we want
             else
             {
-                lbIn = (int16_t *)frame_in->data[0];
-                rbIn = (int16_t *)frame_in->data[1];
+                lbIn = (Filter::sample_t *)frame_in->data[0];
+                rbIn = (Filter::sample_t *)frame_in->data[1];
 
                 // Prepare room for the filter
                 if (lb.size() < nb_samples) lb.resize(nb_samples);
@@ -698,13 +761,13 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                 continue;
             }
             // compute this processing round's max & min normalization factor
-            if ((*filter)->global_max != 0x7FFF)
+            if ((*filter)->global_max > Filter::Max)
             {
-                factor_max = (float)((*filter)->global_max) / (float)0x7FFF;
+                factor_max = (float)((*filter)->global_max) / float(Filter::Max);
             }
-            if ((*filter)->global_min != -0x8000)
+            if ((*filter)->global_min < Filter::Min)
             {
-                factor_min = (float)((*filter)->global_min) / (float)(-0x8000);
+                factor_min = (float)((*filter)->global_min) / float(Filter::Min);
             }
             // compute (or update) the normalization factor  
             if (factor_max != 1.0f || factor_min != 1.0f)

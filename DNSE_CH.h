@@ -12,8 +12,8 @@ public:
 
     void setSamplerate(int sampleRate) override;
 
-    virtual void filter(int16_t l, int16_t r,
-                        int16_t * l_out, int16_t * r_out) override;
+    virtual void filter(sample_t l, sample_t r,
+                        sample_t * l_out, sample_t * r_out) override;
 
 private:
     struct PresetGain;

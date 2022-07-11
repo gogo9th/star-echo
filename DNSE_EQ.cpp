@@ -1,6 +1,7 @@
 
 #include "utils.h"
 #include "DNSE_EQ.h"
+#include "armspecific.h"
 
 
 static const int16_t eqGains[25] = { -0x17F6, -0x16FB, -0x15E1, -0x14A5, -0x1343, -0x11B5, -0xFF6, -0xE01, -0xBCF, -0x959, -0x695, -0x37B,
@@ -66,16 +67,15 @@ void DNSE_EQ::setSamplerate(int sampleRate)
 DNSE_EQ::~DNSE_EQ()
 {}
 
-void DNSE_EQ::filter(int16_t l, int16_t r, int16_t * l_out, int16_t * r_out)
+void DNSE_EQ::filter(sample_t l, sample_t r, sample_t * l_out, sample_t * r_out)
 {
-
-    auto lb =  bq6l_.filter(l) + bq5l_.filter(l) + bq4l_.filter(l) + bq3l_.filter(l) + bq2l_.filter(l) + bq1l_.filter(l) + bq0l_.filter(l) + l;
-    auto rb =  bq6r_.filter(r) + bq5r_.filter(r) + bq4r_.filter(r) + bq3r_.filter(r) + bq2r_.filter(r) + bq1r_.filter(r) + bq0r_.filter(r) + r;
+    samplew_t lb =  bq6l_.filter(l) + bq5l_.filter(l) + bq4l_.filter(l) + bq3l_.filter(l) + bq2l_.filter(l) + bq1l_.filter(l) + bq0l_.filter(l) + l;
+    samplew_t rb =  bq6r_.filter(r) + bq5r_.filter(r) + bq4r_.filter(r) + bq3r_.filter(r) + bq2r_.filter(r) + bq1r_.filter(r) + bq0r_.filter(r) + r;
 
     normalize(lb, rb);
 
-    *l_out = std::min(0x7FFF, std::max(-0x8000, lb));
-    *r_out = std::min(0x7FFF, std::max(-0x8000, rb));
+    *l_out = lb;
+    *r_out = rb;
 }
 
 //
@@ -84,15 +84,14 @@ DNSE_EQ::BiQuadFilter::BiQuadFilter(const int16_t(&filterCoeff)[3], int16_t gain
     : delay_ { 0, 0 }
 {
     copy(fc_, filterCoeff);
-    fc_[0] = (int(fc_[0]) * gain) >> 13;
+    fc_[0] = (samplew_t(fc_[0]) * gain) >> 13;
 }
 
-int32_t DNSE_EQ::BiQuadFilter::filter(int16_t in)
+Filter::samplew_t DNSE_EQ::BiQuadFilter::filter(sample_t in)
 {
-    int64_t v0 = delay_[0];
-    int64_t v1 = delay_[1];
+    auto v0 = delay_[0];
+    auto v1 = delay_[1];
     delay_[0] = delay_[1];
-    delay_[1] = 4 * (((v0 * fc_[1]) >> 16) + ((v1 * fc_[2]) >> 16) + in);
-
-    return (fc_[0] * (delay_[1] - v0)) >> 16;
+    delay_[1] = 4 * (smulw(v0, fc_[1]) + smulw(v1, fc_[2]) + in);
+    return smulw(delay_[1] - v0, fc_[0]);
 }

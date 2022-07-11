@@ -741,8 +741,8 @@ void DNSE_CH::setSamplerate(int sampleRate)
 DNSE_CH::~DNSE_CH()
 {}
 
-void DNSE_CH::filter(int16_t l, int16_t r,
-                     int16_t * l_out, int16_t * r_out)
+void DNSE_CH::filter(sample_t l, sample_t r,
+                     sample_t * l_out, sample_t * r_out)
 {
 
     auto sum = (l + r) >> 2;
@@ -759,16 +759,13 @@ void DNSE_CH::filter(int16_t l, int16_t r,
     auto dr1 = delay1_->filter(ch1_->filter(sec1in));
     auto dr2 = delay2_->filter(ch2_->filter(sec2in));
 
-    auto r1 = ((dr1 * presetGain_->r_gain + ap1 * presetGain_->er_gain) >> 12);
-    auto r2 = ((dr2 * presetGain_->r_gain + ap2 * presetGain_->er_gain) >> 12);
+    samplew_t r1 = ((dr1 * presetGain_->r_gain + ap1 * presetGain_->er_gain) >> 12);
+    samplew_t r2 = ((dr2 * presetGain_->r_gain + ap2 * presetGain_->er_gain) >> 12);
 
     r1 = (r1 + l);
     r2 = (r2 + r);
 
     normalize(r1, r2);
-
-    r1 = std::min(0x7FFF, std::max(-0x8000, r1));
-    r2 = std::min(0x7FFF, std::max(-0x8000, r2));
 
     *l_out = r1;
     *r_out = r2;

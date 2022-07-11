@@ -18,10 +18,9 @@ template<size_t size, typename charType>
 inline static std::array<int16_t, size> getInts(const std::vector<std::basic_string<charType>> & params)
 {
     std::array<int16_t, size> values { 0 };
-    int i = 0;
-    for (auto & param : params)
+    for (int i = 0; i < std::min(size, params.size()); ++i)
     {
-        values[i++] = std::stoi(param);
+        values[i] = std::stoi(params[i]);
     }
     return values;
 }

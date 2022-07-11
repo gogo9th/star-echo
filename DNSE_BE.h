@@ -13,8 +13,8 @@ public:
 
     void setSamplerate(int sampleRate) override;
 
-    void filter(int16_t l, const int16_t r,
-                int16_t * l_out, int16_t * r_out) override;
+    void filter(sample_t l, const sample_t r,
+                sample_t * l_out, sample_t * r_out) override;
 private:
     class Biquad16
     {
@@ -22,23 +22,23 @@ private:
         Biquad16();
         Biquad16(const int16_t(&hIIR)[5]);
 
-        int filter(int16_t in);
+        samplew_t filter(sample_t in);
 
     private:
-        int16_t hIIR_[5];
-        int     iirb_[2];
+        samplew_t   iirb_[2];
+        int16_t     hIIR_[5];
     };
 
     //
 
     int fc_;
 
-    int KBass_ExecMode_;
+    int KBass_Downrate_ = 0;
     int KBass_pt_ = 0;
-    int KBass_B1_poly_coef[24];
-    int KBass_B2_poly_coef[24];
-    int16_t KBass_B1_poly_param[6];
-    int16_t KBass_B2_poly_param[6];
+    Filter::samplew_t KBass_B1_poly_coef[24];
+    Filter::samplew_t KBass_B2_poly_coef[24];
+    Filter::sample_t KBass_B1_poly_param[6];
+    Filter::sample_t KBass_B2_poly_param[6];
 
     Biquad16 KBass_Hpf_L;
     Biquad16 KBass_Hpf_R;

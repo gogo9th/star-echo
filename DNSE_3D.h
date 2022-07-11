@@ -15,34 +15,32 @@ public:
 
     void setSamplerate(int sampleRate) override;
 
-    void filter(int16_t l, const int16_t r,
-                int16_t * l_out, int16_t * r_out) override;
+    void filter(sample_t l, const sample_t r,
+                sample_t * l_out, sample_t * r_out) override;
 private:
     class IIRbiquad3D
     {
     public:
         IIRbiquad3D(const int16_t(&hIIR)[4] = { 0 });
 
-        int filter(int16_t in);
+        samplew_t filter(sample_t in);
 
     private:
-        int16_t hIIR_[4];
-        int     iirb_[2];
+        int16_t     hIIR_[4];
+        samplew_t   iirb_[2];
     };
 
     class FIR4hrtf
     {
     public:
-        FIR4hrtf(int hrdel = 0, const int(&head)[4] = { 0 });
+        FIR4hrtf(int hrdel = 0, const int16_t(&head)[4] = { 0 });
 
-        std::pair<int, int> filter(int l, int r);
+        std::pair<samplew_t, samplew_t> filter(samplew_t l, samplew_t r);
 
     private:
-        int16_t lPrev_;
-        int16_t rPrev_;
-        boost::circular_buffer<int> delayL_;
-        boost::circular_buffer<int> delayR_;
-        int head_[4];
+        boost::circular_buffer<samplew_t> delayL_;
+        boost::circular_buffer<samplew_t> delayR_;
+        int16_t head_[4];
     };
 
     class Reverb
@@ -50,7 +48,7 @@ private:
     public:
         Reverb(const int(&fincoef)[4] = { 0 });
 
-        std::pair<int, int> filter(int l, int r, int iir_l, int iir_r);
+        std::pair<samplew_t, samplew_t> filter(samplew_t l, samplew_t r, samplew_t iir_l, samplew_t iir_r);
 
     private:
         int fincoef_[4];

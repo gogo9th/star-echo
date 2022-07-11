@@ -9,13 +9,13 @@
 DNSE_3D::IIRbiquad3D::IIRbiquad3D(const int16_t(&hIIR)[4])
 {
     copy(hIIR_, hIIR);
-    set(iirb_, 0);
+    set(iirb_, samplew_t(0));
 }
 
-int DNSE_3D::IIRbiquad3D::filter(int16_t in)
+Filter::samplew_t DNSE_3D::IIRbiquad3D::filter(sample_t in)
 {
-    int nxt = smulw(32 * in, hIIR_[0]) + smulw(iirb_[1], hIIR_[3]) + smulw(iirb_[0], hIIR_[2]);
-    int out = nxt + smulw(iirb_[0], hIIR_[1]);
+    auto nxt = smulw(32 * Filter::samplew_t(in), hIIR_[0]) + smulw(iirb_[1], hIIR_[3]) + smulw(iirb_[0], hIIR_[2]);
+    auto out = nxt + smulw(iirb_[0], hIIR_[1]);
     iirb_[1] = iirb_[0];
     iirb_[0] = 4 * nxt;
     return out;
@@ -23,7 +23,7 @@ int DNSE_3D::IIRbiquad3D::filter(int16_t in)
 
 //
 
-DNSE_3D::FIR4hrtf::FIR4hrtf(int hrdel, const int(&head)[4])
+DNSE_3D::FIR4hrtf::FIR4hrtf(int hrdel, const int16_t (&head)[4])
 {
     assert(hrdel <= 17);
     delayL_.resize(hrdel + 1);
@@ -31,7 +31,7 @@ DNSE_3D::FIR4hrtf::FIR4hrtf(int hrdel, const int(&head)[4])
     copy(head_, head);
 }
 
-std::pair<int, int> DNSE_3D::FIR4hrtf::filter(int l, int r)
+std::pair<Filter::samplew_t, Filter::samplew_t> DNSE_3D::FIR4hrtf::filter(samplew_t l, samplew_t r)
 {
     auto r1 = smulw(delayL_.back(), head_[1]) + smulw(delayR_[0], head_[3]);
     auto r2 = smulw(delayR_.back(), head_[1]) + smulw(delayL_[0], head_[3]);
@@ -50,11 +50,11 @@ DNSE_3D::Reverb::Reverb(const int(&fincoef)[4])
     copy(fincoef_, fincoef);
 }
 
-std::pair<int, int> DNSE_3D::Reverb::filter(int l, int r, int iir_l, int iir_r)
+std::pair<Filter::samplew_t, Filter::samplew_t> DNSE_3D::Reverb::filter(samplew_t l, samplew_t r, samplew_t iir_l, samplew_t iir_r)
 {
     // reverb_and_effect
 
-    auto r1 = smulw(4 * l, fincoef_[0]) + smulw(4 * r, fincoef_[3]);
+    auto r1 = smulw(4 * /*Filter::samplew_t*/(l), fincoef_[0]) + smulw(4 * r, fincoef_[3]);
     auto r2 = smulw(4 * r, fincoef_[0]) + smulw(4 * l, fincoef_[3]);
 
     r1 += smulw(4 * iir_l, fincoef_[1]) + smulw(4 * iir_r, fincoef_[2]);
@@ -122,20 +122,18 @@ void DNSE_3D::setSamplerate(int sampleRate)
     iir_l_ = IIRbiquad3D(hiir[mhrdelOff]);
     iir_r_ = IIRbiquad3D(hiir[mhrdelOff]);
 
-    static const int head[9][4] = {
+    static const int mhrdel[] = { 0x2E7, 0x400, 0x45B, 0x5CE, 0x800, 0x8B5, 0xB9C, 0x1000, 0x116A };
+    static const int16_t head[9][4] = {
         0x568D, -0x2C75, 0x1958, 0x10C0, 0x58C9, -0x3737, 0x1582, 0xC11,
         0x5954, -0x39CF, 0x1495, 0xAEF, 0x5AFD, -0x41CD, 0x11BC, 0x774,
         0x5C87, -0x4935, 0xF18, 0x43A, 0x5CE2, -0x4AE9, 0xE7D, 0x37C,
         0x5DEF, -0x4FF7, 0xCB0, 0x148, 0x5EDB, -0x5468, 0xB1A, -0xA7,
         0x5F10, -0x5566, 0xAC0, -0x116,
     };
-    copy(head_, head[mhrdelOff]);
 
-    static const int mhrdel[] = { 0x2E7, 0x400, 0x45B, 0x5CE, 0x800, 0x8B5, 0xB9C, 0x1000, 0x116A };
     // max value is 17
     khrdel_ = (mhrdel[mhrdelOff] * st_hrdel_ + 0x800) >> 12;
-
-    fir_ = FIR4hrtf(khrdel_, head_);
+    fir_ = FIR4hrtf(khrdel_, head[mhrdelOff]);
 
     int fincoef[4];
     auto effectstrength = 409 * st_eff_;
@@ -161,7 +159,7 @@ void DNSE_3D::setSamplerate(int sampleRate)
 DNSE_3D::~DNSE_3D()
 {}
 
-void DNSE_3D::filter(int16_t l, const int16_t r, int16_t * l_out, int16_t * r_out)
+void DNSE_3D::filter(sample_t l, const sample_t r, sample_t * l_out, sample_t * r_out)
 {
     auto lbIIR = iir_l_.filter(l);
     auto rbIIR = iir_r_.filter(r);
@@ -169,7 +167,9 @@ void DNSE_3D::filter(int16_t l, const int16_t r, int16_t * l_out, int16_t * r_ou
     auto [lbFIR, rbFIR] = fir_.filter(lbIIR, rbIIR);
     auto [lbRev, rbRev] = reverb_.filter(l, r, lbFIR, rbFIR);
 
-    *l_out = std::min(0x7FFF, std::max(-0x8000, lbRev));
-    *r_out = std::min(0x7FFF, std::max(-0x8000, rbRev));
+    normalize(lbRev, rbRev);
+
+    *l_out = lbRev;
+    *r_out = rbRev;
 }
 
