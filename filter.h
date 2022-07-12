@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cmath>
 #include <cassert>
 #include <vector>
 #include <cstdlib>
@@ -61,10 +62,10 @@ public:
     {
         if (normalizer != 1.0f)
         {
-            auto ln = ((float)l / normalizer);
+            auto ln = std::lround((float)l / normalizer);
             // correct sign swap when result jitters over 0x800*
             l = ln - ((ln < 0) ^ (l < 0));
-            auto rn = (sample_t)((float)r / normalizer);
+            auto rn = std::lround((float)r / normalizer);
             r = rn - ((rn < 0) ^ (l < 0));
         }
 

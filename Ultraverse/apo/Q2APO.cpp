@@ -452,7 +452,7 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                         auto l = inputFrames[2 * i];
                         auto r = inputFrames[2 * i + 1];
 
-                        int16_t ol, or ;
+                        Filter::sample_t ol, or ;
                         for (auto & filter : filters_)
                         {
                             filter->filter(l, r, &ol, &or);
@@ -477,20 +477,20 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                 {
                     for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
                     {
-                        auto l = int(std::round(inputFrames[2 * i] * 0x7FFF));
-                        auto r = int(std::round(inputFrames[2 * i + 1] * 0x7FFF));
+                        auto l = std::lround(inputFrames[2 * i] * Filter::Max);
+                        auto r = std::lround(inputFrames[2 * i + 1] * Filter::Max);
 
-                        int16_t ol, or;
+                        Filter::sample_t ol, or;
                         for (auto & filter : filters_)
                         {
                             filter->filter(l, r, &ol, &or);
                             l = ol;
-                            r = or ;
+                            r = or;
                         }
 
                         // decrease volume after filter if adjustGain should increase volume
-                        outputFrames[2 * i] = float(ol) / 0x7FFF;
-                        outputFrames[2 * i + 1] = float(or) / 0x7FFF;
+                        outputFrames[2 * i] = float(ol) / Filter::Max;
+                        outputFrames[2 * i + 1] = float(or) / Filter::Max;
                     }
                 }
                 else
