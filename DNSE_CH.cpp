@@ -4,6 +4,7 @@
 #include <deque>
 #include <vector>
 
+#include <boost/circular_buffer.hpp>
 
 #include "q2cathedral.h"
 #include "DNSE_CH.h"
@@ -440,15 +441,16 @@ struct DNSE_CH::PresetGain
     int32_t r_gain;
 };
 
-
 //
+
+static constexpr Filter::samplew_t m800 = 0x800 << (sizeof(Filter::sample_t) * 8 - 16);
 
 class VFilter
 {
 public:
     virtual ~VFilter() {}
 
-    virtual int32_t filter(int32_t in) = 0;
+    virtual Filter::samplew_t filter(Filter::samplew_t in) = 0;
 };
 
 
@@ -477,38 +479,35 @@ private:
 class DNSE_CH::DelayFilter : public VFilter
 {
 public:
-    DelayFilter(int32_t delay)
+    DelayFilter(int delay)
         : delay_(delay)
     {
-        delay_buff_.assign(delay, 0);
+        delay_buff_.resize(delay);
     }
-
-    //using VFilter::filter;
 
     virtual ~DelayFilter() {}
 
 protected:
-    int32_t delay_;
-    std::deque<int32_t> delay_buff_;
+    int delay_;
+    boost::circular_buffer<samplew_t> delay_buff_;
 };
 
 
 class DNSE_CH::APFilter : public DelayFilter
 {
 public:
-    APFilter(int32_t delay, int32_t gain)
+    APFilter(int delay, int32_t gain)
         : DelayFilter(delay)
         , gain_(gain)
     {}
 
-    int32_t filter(int32_t in) override
+    Filter::samplew_t filter(Filter::samplew_t in) override
     {
         auto last = delay_buff_.back();
-        delay_buff_.pop_back();
 
-        auto first = in + ((gain_ * last + 0x800) >> 12);
+        auto first = in + ((gain_ * last + m800) >> 12);
         delay_buff_.push_front(first);
-        return last - (((gain_ * first) + 0x800) >> 12);
+        return last - (((gain_ * first) + m800) >> 12);
     }
 
 protected:
@@ -519,7 +518,7 @@ protected:
 class DNSE_CH::DelaySplitFilter : public DelayFilter
 {
 public:
-    DelaySplitFilter(int32_t delay,
+    DelaySplitFilter(int delay,
                      const int32_t(&gains)[4],
                      const int32_t(&er_delays)[7])
         : DelayFilter(delay)
@@ -537,15 +536,14 @@ public:
         }
     }
 
-    int32_t filter(int32_t in) override
+    Filter::samplew_t filter(Filter::samplew_t in) override
     {
         assert(false);
         return 0;
     }
 
-    std::array<int32_t, 2> filter2(int32_t in)
+    std::array<Filter::samplew_t, 2> filter2(Filter::samplew_t in)
     {
-        delay_buff_.pop_back();
         delay_buff_.push_front(in);
 
         auto l = (delay_buff_[er_delays_[0]] >> 1) + (delay_buff_[er_delays_[1]])
@@ -565,7 +563,7 @@ private:
 class DNSE_CH::DelayShiftFilter : public DelayFilter
 {
 public:
-    DelayShiftFilter(int32_t delay,
+    DelayShiftFilter(int delay,
                      int32_t gain,
                      int32_t absorb,
                      int32_t out_shift)
@@ -577,17 +575,15 @@ public:
         assert(out_shift_ > 0 && out_shift <= delay);
     }
 
-    int32_t last()
+    Filter::samplew_t last()
     {
         auto last = delay_buff_.back();
         return (last * gain_) >> 12;
     }
 
-    int32_t filter(int32_t in) override
+    Filter::samplew_t filter(Filter::samplew_t in) override
     {
-        delay_buff_.pop_back();
-
-        flow_ += ((((in - flow_) * absorb_) + 0x800) >> 12);
+        flow_ += ((((in - flow_) * absorb_) + m800) >> 12);
         delay_buff_.push_front(flow_);
 
         return delay_buff_[out_shift_ - 1];
@@ -603,7 +599,7 @@ private:
 class DNSE_CH::VbrFilter : public DelayFilter
 {
 public:
-    VbrFilter(int32_t delay,
+    VbrFilter(int delay,
               int32_t gain,
               int32_t shift,
               int32_t ggain)
@@ -612,12 +608,12 @@ public:
         , gain_(gain)
         , ggain_(ggain)
         , vbr_delay_(delay)
-    {}
-
-    int32_t filter(int32_t in) override
     {
-        delay_buff_.pop_back();
+        //shift <<= sizeof(Filter::sample_t) * 8 - 16;
+    }
 
+    Filter::samplew_t filter(Filter::samplew_t in) override
+    {
         v66 += shift_;
         if (v66 > 0x20000000)
         {
@@ -643,8 +639,8 @@ private:
     int32_t shift_;
     int32_t gain_;
     int32_t ggain_;
-    int32_t v66 = 0;
-    int32_t v66_1 = 0;
+    Filter::samplew_t v66 = 0;
+    Filter::samplew_t v66_1 = 0;
 };
 
 
@@ -657,17 +653,17 @@ public:
         , total_gain_(total_gain)
     {
         copy(gains_, gains);
+        delay_.resize(2);
     }
 
-    int32_t filter(int32_t in)
+    Filter::sample_t filter(Filter::sample_t in)
     {
-        v_tone += ((in - v_tone) * tone_ + 0x800) >> 12;
+        v_tone += (Filter::samplew_t(in - v_tone) * tone_ + m800) >> 12;
 
-        auto v1 = v1_p * gains_[2] + v2_p * gains_[3] + ((int64_t)v_tone << 12);
-        auto v2 = v1_p * gains_[0] + v2_p * gains_[1];
+        auto v1 = delay_[1] * gains_[2] + delay_[0] * gains_[3] + ((int64_t)v_tone << 12);
+        auto v2 = delay_[1] * gains_[0] + delay_[0] * gains_[1];
 
-        v2_p = v1_p;
-        v1_p = v1 >> 12;
+        delay_.push_back(v1 >> 12);
 
         return ((((v1 * d1c785c_ >> 12) + v2) >> 12) * total_gain_) >> 12;
     }
@@ -678,9 +674,8 @@ private:
     int32_t d1c785c_;
     int32_t gains_[4];
 
-    int     v_tone = 0;
-    int64_t v1_p = 0;
-    int64_t v2_p = 0;
+    Filter::sample_t v_tone = 0;
+    boost::circular_buffer<samplew_t> delay_;
 };
 
 //
@@ -744,7 +739,6 @@ DNSE_CH::~DNSE_CH()
 void DNSE_CH::filter(sample_t l, sample_t r,
                      sample_t * l_out, sample_t * r_out)
 {
-
     auto sum = (l + r) >> 2;
 
     auto tone = toneFilter_->filter(sum);
