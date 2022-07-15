@@ -17,7 +17,6 @@ extern "C" {
 #include "q2cathedral.h"
 #include "threaded.h"
 #include "mediaProcess.h"
-#include "DNSE_CH.h"
 
 namespace po = boost::program_options;
 
@@ -214,7 +213,7 @@ Predefined filters:\n\
         filters.push_back("ch");
     }
 
-    FilterFabric fab(!normalize);
+    MediaProcess::FilterFab fab(!normalize);
     for (const auto & desc : filters)
     {
         auto r = fab.addDesc(stringToWstring(desc));

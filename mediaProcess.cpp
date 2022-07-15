@@ -17,8 +17,6 @@ extern "C" {
 
 #include "mediaProcess.h"
 #include "log.hpp"
-#include "DNSE_CH.h"
-#include "DNSE_EQ.h"
 
 
 av_always_inline std::string av_err2string(int errnum)
@@ -311,8 +309,11 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
     int filterSampleRate = audioCodecIn->sample_rate;
 
-    static_assert(std::is_same_v<Filter::sample_t, int16_t> || std::is_same_v<Filter::sample_t, int32_t>, "Incompatible internal type");
-    const auto filterFormat = std::is_same_v<Filter::sample_t, int16_t> ? AV_SAMPLE_FMT_S16P : AV_SAMPLE_FMT_S32P;
+    static_assert(std::is_same_v<FilterFab::sample_t, int16_t> || std::is_same_v<FilterFab::sample_t, int32_t> || std::is_same_v<FilterFab::sample_t, float>
+                  , "Incompatible internal type");
+    const auto filterFormat = std::is_same_v<FilterFab::sample_t, float> ? AV_SAMPLE_FMT_FLTP
+        : std::is_same_v<FilterFab::sample_t, int16_t> ? AV_SAMPLE_FMT_S16P
+        : AV_SAMPLE_FMT_S32P;
 
 
     // SwrContext contains the audio file's sound quality parameters, such as the audio channel left/right flags (mono/stereo), 
@@ -379,11 +380,11 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
     if (params.codec_id == AV_CODEC_ID_FIRST_AUDIO) // that is pcm
     {
-        if (std::is_same_v<Filter::sample_t, int16_t>)
+        if (std::is_same_v<FilterFab::sample_t, int16_t>)
         {
             params.codec_id = AV_CODEC_ID_PCM_S16LE;
         }
-        else if (std::is_same_v<Filter::sample_t, int32_t>)
+        else if (std::is_same_v<FilterFab::sample_t, int32_t> || std::is_same_v<FilterFab::sample_t, float>)
         {
             params.codec_id = AV_CODEC_ID_PCM_S32LE;
         }
@@ -483,8 +484,8 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                                  [] (auto * d) { av_audio_fifo_free(d); });
     if (!fifo) throw MPError("failed to allocate fifo");
 
-    std::vector<Filter::sample_t> lb, rb;
-    std::vector<Filter::sample_t> lbOut, rbOut;
+    std::vector<FilterFab::sample_t> lb, rb;
+    std::vector<FilterFab::sample_t> lbOut, rbOut;
 
     int pts = 0;
     auto Pts = [&pts] (int samples)
@@ -495,7 +496,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     };
 
     for (int i = 0; i < normalizers.size(); i++)
-        filters[i]->normalizer = normalizers[i];
+        filters[i]->setNormFactor(normalizers[i]);
 
     //bool isFirstChunk = true;
 
@@ -577,8 +578,8 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
             }
 
             // Our filter expects the input to be signed a stereo 16-bit planar layout, so our data type is int16_t 
-            Filter::sample_t * lbIn;
-            Filter::sample_t * rbIn;
+            FilterFab::sample_t * lbIn;
+            FilterFab::sample_t * rbIn;
 
             // This is the input music file's decoded raw frame
             int nb_samples = frame_in->nb_samples;
@@ -618,8 +619,8 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
             // If the input music file is in the format we want
             else
             {
-                lbIn = (Filter::sample_t *)frame_in->data[0];
-                rbIn = (Filter::sample_t *)frame_in->data[1];
+                lbIn = (FilterFab::sample_t *)frame_in->data[0];
+                rbIn = (FilterFab::sample_t *)frame_in->data[1];
 
                 // Prepare room for the filter
                 if (lb.size() < nb_samples) lb.resize(nb_samples);
@@ -748,37 +749,29 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
         int i = 0;
         bool is_initial = !normalizers.size();
-        for (auto filter = filters.begin(); normalize && filter != filters.end(); ++filter)
+        for (auto & filter : filters)
         {
-            float factor_max = 1.0f, factor_min = 1.0f;
-
             if (is_initial)
-                normalizers.push_back((*filter)->normalizer);
+                normalizers.push_back(filter->normFactor());
 
             // normalize only the first ripping filter 
             if (ripped)
             {
                 continue;
             }
-            // compute this processing round's max & min normalization factor
-            if ((*filter)->global_max > Filter::Max)
-            {
-                factor_max = (float)((*filter)->global_max) / float(Filter::Max);
-            }
-            if ((*filter)->global_min < Filter::Min)
-            {
-                factor_min = (float)((*filter)->global_min) / float(Filter::Min);
-            }
-            // compute (or update) the normalization factor  
-            if (factor_max != 1.0f || factor_min != 1.0f)
+
+            // compute (or update) the normalization factor
+            auto newFactor = filter->calcNormFactor();
+            if (newFactor > 1.0f)
             {
                 ripped = true;
-                normalizers[i] *= std::max(factor_max, factor_min);
+                normalizers[i] *= newFactor;
 
                 msg() << "- Normalizing Filter[" << i << "]: Division Factor = " << normalizers[i];
             }
             i++;
         }
+
         // save the music file only if there is no ripping sound
         if (!normalize || !ripped)
             std::filesystem::rename(tempOut, item.output);

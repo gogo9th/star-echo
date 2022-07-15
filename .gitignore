@@ -14,3 +14,6 @@ tags
 
 *.user
 /Ultraverse/Setup/bin
+/CMakeFiles
+/temp
+/Ultraverse/apo/*.aps

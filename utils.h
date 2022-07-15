@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 
 
 template<typename char_type>
@@ -56,4 +57,32 @@ template<typename T, int size>
 inline void set(T(&dst)[size], T value)
 {
     std::fill(dst, dst + std::size(dst), value);
+}
+
+template<typename T, std::size_t N>
+std::array<std::remove_cv_t<T>, N> to_array(T(&src)[N])
+{
+    std::array<std::remove_cv_t<T>, N> r;
+    std::copy(src, src + std::size(src), r.begin());
+    return r;
+}
+
+template<typename T, size_t size, typename R>
+std::array<R, size> operator/(const std::array<T, size> & arr, R div)
+{
+    std::array<R, size> r;
+    for (auto i {0}; i < size; ++i)
+    {
+        r[i] = arr[i] / div;
+    }
+    return r;
+}
+
+template<typename T, std::size_t N, class Fn>
+void for_each(T (&arr)[N], Fn fn)
+{
+    for (auto & v : arr)
+    {
+        v = fn(v);
+    }
 }

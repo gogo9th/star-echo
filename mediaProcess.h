@@ -6,7 +6,7 @@
 #include <functional>
 
 #include "filter.h"
-#include "FilterFabric.h"
+#include "FilterFabric.hpp"
 
 
 struct FileItem
@@ -22,7 +22,11 @@ class MediaProcess
     MediaProcess(const MediaProcess &) = delete;
     MediaProcess operator=(const MediaProcess &) = delete;
 public:
-    MediaProcess(const FilterFabric & fab)
+    //using FilterFab = FilterFabI16;
+    //using FilterFab = FilterFabI32;
+    using FilterFab = FilterFabD;
+
+    MediaProcess(const FilterFab & fab)
         : filterFab_(fab)
     {}
 
@@ -32,5 +36,5 @@ private:
     void process(const FileItem & item) const;
     bool do_process(const FileItem & item, std::vector<float>& normalizers) const;
 
-    FilterFabric filterFab_;
+    FilterFab filterFab_;
 };
