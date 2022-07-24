@@ -7,22 +7,10 @@
     <ClCompile Include="Q2APO_i.c">
       <Filter>Generated</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\DNSE_CH.cpp">
+    <ClCompile Include="..\..\DNSE_CH_params.cpp">
       <Filter>Q2</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\DNSE_EQ.cpp">
-      <Filter>Q2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\DbReduce.cpp">
-      <Filter>Q2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\DNSE_3D.cpp">
-      <Filter>Q2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\DNSE_BE.cpp">
-      <Filter>Q2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\FilterFabric.cpp">
+    <ClCompile Include="..\..\DNSE_BE_params.cpp">
       <Filter>Q2</Filter>
     </ClCompile>
   </ItemGroup>
@@ -36,22 +24,28 @@
       <Filter>Resources</Filter>
     </ClInclude>
     <ClInclude Include="log.hpp" />
-    <ClInclude Include="..\..\DNSE_CH.h">
+    <ClInclude Include="..\..\FilterFabric.hpp">
       <Filter>Q2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\DNSE_EQ.h">
+    <ClInclude Include="..\..\DNSE_EQ.hpp">
       <Filter>Q2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\DbReduce.h">
+    <ClInclude Include="..\..\DNSE_3D.hpp">
       <Filter>Q2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\DNSE_3D.h">
+    <ClInclude Include="..\..\DNSE_BE.hpp">
       <Filter>Q2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\DNSE_BE.h">
+    <ClInclude Include="..\..\DbReduce.hpp">
       <Filter>Q2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\FilterFabric.h">
+    <ClInclude Include="..\..\DNSE_CH.hpp">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DNSE_CH_params.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DNSE_BE_params.h">
       <Filter>Q2</Filter>
     </ClInclude>
   </ItemGroup>

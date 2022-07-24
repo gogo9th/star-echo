@@ -73,7 +73,6 @@ public:
         bq4l_ = bq4r_ = BiQuadFilter(to_array(eqFilter4[srIndex]), gains_[4]);
         bq5l_ = bq5r_ = BiQuadFilter(to_array(eqFilter5[srIndex]), gains_[5]);
         bq6l_ = bq6r_ = BiQuadFilter(to_array(eqFilter6[srIndex]), gains_[6]);
-
     }
 
     virtual void filter(sample_t l, sample_t r,
@@ -103,7 +102,7 @@ private:
             else if constexpr (std::is_floating_point_v<sample_t>)
             {
                 fc_ = filterCoeff / float(0x10000);
-                fc_[0] = samplew_t(fc_[0]) * gain / 0x2000;
+                fc_[0] = fc_[0] * gain / 0x2000;
             }
         }
 

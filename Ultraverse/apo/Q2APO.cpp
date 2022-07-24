@@ -1,7 +1,5 @@
 #include "stdafx.h"
 
-#include "DNSE_CH.h"
-#include "DNSE_EQ.h"
 #include "Q2APO.h"
 #include "log.hpp"
 
@@ -9,8 +7,7 @@
 #include "common/registry.h"
 #include "common/settings.h"
 #include "common/error.h"
-#include "DbReduce.h"
-#include "FilterFabric.h"
+#include "FilterFabric.hpp"
 
 
 #pragma comment(lib, "legacy_stdio_definitions.lib")    // _vsnwprintf
@@ -397,12 +394,11 @@ STDMETHODIMP Q2APOMFX::GetEffectsList(_Outptr_result_buffer_maybenull_(*pcEffect
             }
 
             // pick up the active effects
-            UINT j = 0;
             for (UINT i = 0; i < std::size(list); i++)
             {
                 //if (list[i].control)
                 {
-                    pEffectsIds[j++] = list[i].effect;
+                    pEffectsIds[i] = list[i].effect;
                 }
             }
 
@@ -449,8 +445,8 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                 {
                     for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
                     {
-                        auto l = inputFrames[2 * i];
-                        auto r = inputFrames[2 * i + 1];
+                        auto l = float(inputFrames[2 * i]) / std::numeric_limits<int16_t>::max();
+                        auto r = float(inputFrames[2 * i + 1]) / std::numeric_limits<int16_t>::max();
 
                         Filter::sample_t ol, or ;
                         for (auto & filter : filters_)
@@ -459,8 +455,8 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                             l = ol;
                             r = or;
                         }
-                        outputFrames[2 * i] = ol;
-                        outputFrames[2 * i + 1] = or;
+                        outputFrames[2 * i] = int16_t(std::lround(ol * std::numeric_limits<int16_t>::max()));
+                        outputFrames[2 * i + 1] = int16_t(std::lround(or * std::numeric_limits<int16_t>::max()));
                     }
                 }
                 else
@@ -477,20 +473,15 @@ STDMETHODIMP_(void) Q2APOMFX::APOProcess(UINT32 u32NumInputConnections, APO_CONN
                 {
                     for (unsigned i = 0; i < iConn->u32ValidFrameCount; i++)
                     {
-                        auto l = std::lround(inputFrames[2 * i] * Filter::Max);
-                        auto r = std::lround(inputFrames[2 * i + 1] * Filter::Max);
-
                         Filter::sample_t ol, or;
                         for (auto & filter : filters_)
                         {
-                            filter->filter(l, r, &ol, &or);
-                            l = ol;
-                            r = or;
+                            filter->filter(inputFrames[2 * i], inputFrames[2 * i + 1], &ol, &or);
                         }
 
                         // decrease volume after filter if adjustGain should increase volume
-                        outputFrames[2 * i] = float(ol) / Filter::Max;
-                        outputFrames[2 * i + 1] = float(or) / Filter::Max;
+                        outputFrames[2 * i] = ol;
+                        outputFrames[2 * i + 1] = or;
                     }
                 }
                 else
@@ -587,7 +578,7 @@ void Q2APOMFX::createFilters(const std::wstring & settings)
         err() << "Unsupported filter setting " << settings;
     }
 
-    newFilters = fab.create();
+    newFilters = fab.create<float, double>();
     for (auto & filter : newFilters)
     {
         filter->setSamplerate(lockedSampleRate_);

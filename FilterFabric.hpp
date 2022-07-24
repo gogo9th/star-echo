@@ -3,9 +3,10 @@
 #include <vector>
 #include <map>
 
+#include <boost/algorithm/string.hpp>
+
 #include "filter.h"
 #include "utils.h"
-#include "log.hpp"
 #include "DNSE_CH.hpp"
 #include "DNSE_EQ.hpp"
 #include "DNSE_3D.hpp"
@@ -13,7 +14,6 @@
 #include "DbReduce.hpp"
 
 
-template<typename sampleType, typename wideSampleType, bool enableDbReduce = false>
 class FilterFabric
 {
     template<typename valueType, size_t size, typename charType>
@@ -28,10 +28,6 @@ class FilterFabric
     }
 
 public:
-    using sample_t = typename Filter<sampleType, wideSampleType>::sample_t;
-    using samplew_t = typename Filter<sampleType, wideSampleType>::samplew_t;
-
-
     FilterFabric(bool doDbReduce = true)
         : doDbReduce_(doDbReduce)
     {}
@@ -65,8 +61,8 @@ public:
             }
             else
             {
-                // validation, try to create filter
-                auto f = createFilter(filter);
+                // validation, try to create filter with some typing
+                auto f = createFilter<int16_t, int32_t>(filter);
                 if (f.empty())
                 {
                     return false;
@@ -79,13 +75,14 @@ public:
         return true;
     }
 
+    template<typename sampleType, typename wideSampleType>
     std::vector<std::unique_ptr<Filter<sampleType, wideSampleType>>> create() const
     {
         std::vector<std::unique_ptr<Filter<sampleType, wideSampleType>>> r;
 
         for (auto & desc : descs_)
         {
-            auto f = createFilter(desc);
+            auto f = createFilter<sampleType, wideSampleType>(desc);
             if (f.empty())
             {
                 return {};
@@ -101,6 +98,7 @@ public:
 
 
 private:
+    template<typename sampleType, typename wideSampleType>
     std::vector<std::unique_ptr<Filter<sampleType, wideSampleType>>> createFilter(const std::wstring & desc) const
     {
         try
@@ -183,10 +181,3 @@ private:
     bool doDbReduce_;
     std::vector<std::wstring> descs_;
 };
-
-
-using FilterFabI16  = FilterFabric<int16_t, int32_t>;
-using FilterFabI32  = FilterFabric<int32_t, int64_t>;
-using FilterFabF    = FilterFabric<float, float>;
-using FilterFabD    = FilterFabric<float, double>;
-

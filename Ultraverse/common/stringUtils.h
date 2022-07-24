@@ -22,7 +22,7 @@ inline std::wstring operator+(std::wstring l, long v)
     return std::wstring(l).operator+=(std::to_wstring(v));
 }
 
-
+/*
 template<typename char_type>
 std::vector<std::basic_string<char_type>> stringSplit(const std::basic_string<char_type> & str, std::basic_string_view<char_type> delimiter)
 {
@@ -48,6 +48,7 @@ inline std::vector<std::basic_string<char_type>> stringSplit(const std::basic_st
 {
     return stringSplit(str, std::basic_string_view<char_type>(delimiter, size - 1));
 }
+*/
 
 void toUpperCase(std::wstring & s);
 std::wstring toUpperCase(const std::wstring & s);

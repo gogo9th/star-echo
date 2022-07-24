@@ -213,7 +213,7 @@ Predefined filters:\n\
         filters.push_back("ch");
     }
 
-    MediaProcess::FilterFab fab(!normalize);
+    FilterFabric fab(!normalize);
     for (const auto & desc : filters)
     {
         auto r = fab.addDesc(stringToWstring(desc));

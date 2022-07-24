@@ -22,11 +22,7 @@ class MediaProcess
     MediaProcess(const MediaProcess &) = delete;
     MediaProcess operator=(const MediaProcess &) = delete;
 public:
-    //using FilterFab = FilterFabI16;
-    //using FilterFab = FilterFabI32;
-    using FilterFab = FilterFabD;
-
-    MediaProcess(const FilterFab & fab)
+    MediaProcess(const FilterFabric & fab)
         : filterFab_(fab)
     {}
 
@@ -36,5 +32,5 @@ private:
     void process(const FileItem & item) const;
     bool do_process(const FileItem & item, std::vector<float>& normalizers) const;
 
-    FilterFab filterFab_;
+    FilterFabric filterFab_;
 };

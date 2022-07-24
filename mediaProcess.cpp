@@ -13,6 +13,8 @@ extern "C" {
 }
 #endif
 
+#include <variant>
+
 #include <boost/algorithm/string.hpp>
 
 #include "mediaProcess.h"
@@ -206,6 +208,80 @@ static void writeToFifo(AVAudioFifo * fifo, void ** buffers, int nbSamples)
 
 //
 
+template<typename sample_t>
+struct FType0
+{
+    std::vector<sample_t> lb, rb;
+    sample_t * lbIn, * rbIn;
+    std::vector<sample_t> lbOut, rbOut;
+
+    FType0()
+    {
+        lbIn = lb.data();
+        rbIn = rb.data();
+    }
+
+    void resizeIn(size_t size)
+    {
+        if (lb.size() < size)
+        {
+            lb.resize(size);
+            lbIn = lb.data();
+        }
+        if (rb.size() < size)
+        {
+            rb.resize(size);
+            rbIn = rb.data();
+        }
+    }
+
+    void resizeOut(size_t size)
+    {
+        if (lbOut.size() < size) lbOut.resize(size);
+        if (rbOut.size() < size) rbOut.resize(size);
+    }
+
+    std::array<uint8_t *, 2> buffersIn() const
+    {
+        return { (uint8_t *)lb.data(), (uint8_t *)rb.data() };
+    }
+
+    std::array<uint8_t *, 2> buffersOut() const
+    {
+        return { (uint8_t *)lbOut.data(), (uint8_t *)rbOut.data() };
+    }
+
+    void buffersExt(uint8_t * d0, uint8_t * d1, int samples)
+    {
+        lbIn = (sample_t *)d0;
+        rbIn = (sample_t *)d1;
+
+        // Prepare room for the filter
+        if (lb.size() < samples) lb.resize(samples);
+        if (rb.size() < samples) rb.resize(samples);
+    }
+
+    template<typename Filter, std::enable_if_t<std::is_same_v<typename Filter::sample_t, sample_t>, bool> = true>
+    void run(Filter & filter, int samples)
+    {
+        filter.filter(lbIn, rbIn, lbOut.data(), rbOut.data(), samples);
+    }
+
+    template<typename Filter, std::enable_if_t<!std::is_same_v<typename Filter::sample_t, sample_t>, bool> = true>
+    void run(Filter & filter, int samples)
+    {}
+
+    void swap()
+    {
+        lb.swap(lbOut);
+        rb.swap(rbOut);
+        lbIn = lb.data();
+        rbIn = rb.data();
+    }
+};
+
+//
+
 std::string MediaProcess::operator()(const FileItem & item) const
 {
     try
@@ -304,31 +380,54 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
     // *** Set up the input format ctx ***
 
-    auto filters = filterFab_.create();
+    std::variant<
+        std::vector<std::unique_ptr<Filter<int32_t, int64_t>>>,
+        std::vector<std::unique_ptr<Filter<float, double>>>
+    > filters;
+
+    AVSampleFormat filterFormat;
+    if (audioCodecIn->sample_fmt == AV_SAMPLE_FMT_FLT || audioCodecIn->sample_fmt == AV_SAMPLE_FMT_FLTP
+        || audioCodecIn->sample_fmt == AV_SAMPLE_FMT_DBL || audioCodecIn->sample_fmt == AV_SAMPLE_FMT_DBLP)
+    {
+        filters = filterFab_.create<float, double>();
+        filterFormat = AV_SAMPLE_FMT_FLTP;
+    }
+    else
+    {
+        filters = filterFab_.create<int32_t, int64_t>();
+        filterFormat = AV_SAMPLE_FMT_S32P;
+    }
 
 
     int filterSampleRate = audioCodecIn->sample_rate;
 
-    static_assert(std::is_same_v<FilterFab::sample_t, int16_t> || std::is_same_v<FilterFab::sample_t, int32_t> || std::is_same_v<FilterFab::sample_t, float>
-                  , "Incompatible internal type");
-    const auto filterFormat = std::is_same_v<FilterFab::sample_t, float> ? AV_SAMPLE_FMT_FLTP
-        : std::is_same_v<FilterFab::sample_t, int16_t> ? AV_SAMPLE_FMT_S16P
-        : AV_SAMPLE_FMT_S32P;
+    std::visit([&filterSampleRate] (auto && filters)
+               {
+                   for (auto & filter : filters)
+                   {
+                       filterSampleRate = filter->agreeSamplerate(filterSampleRate);
+                   }
+               }, filters);
+    std::visit([&filterSampleRate] (auto && filters)
+               {
+                   for (auto & filter : filters)
+                   {
+                       filter->setSamplerate(filterSampleRate);
+                   }
+               }, filters);
+
+    std::visit([&normalizers] (auto && filters)
+               {
+                   for (size_t i = 0; i < normalizers.size(); i++)
+                       filters[i]->setNormFactor(normalizers[i]);
+               }, filters);
+
 
 
     // SwrContext contains the audio file's sound quality parameters, such as the audio channel left/right flags (mono/stereo), 
     //  sampling format (e.g., 16 bits), and sampling rate (e.g., 44kHz)
     scoped_ptr<SwrContext> swr_in(nullptr, [] (SwrContext * d) { swr_free(&d); });
     {
-        for (auto & filter : filters)
-        {
-            filterSampleRate = filter->agreeSamplerate(filterSampleRate);
-        }
-
-        for (auto & filter : filters)
-        {
-            filter->setSamplerate(filterSampleRate);
-        }
 
         /* Force the input audio channel to have front left & right */
         /* Force the sampling format to be signed-X-bit-planar */
@@ -380,11 +479,11 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
     if (params.codec_id == AV_CODEC_ID_FIRST_AUDIO) // that is pcm
     {
-        if (std::is_same_v<FilterFab::sample_t, int16_t>)
+        if (filterFormat == AV_SAMPLE_FMT_FLTP)
         {
-            params.codec_id = AV_CODEC_ID_PCM_S16LE;
+            params.codec_id = AV_CODEC_ID_PCM_F32LE;
         }
-        else if (std::is_same_v<FilterFab::sample_t, int32_t> || std::is_same_v<FilterFab::sample_t, float>)
+        else
         {
             params.codec_id = AV_CODEC_ID_PCM_S32LE;
         }
@@ -484,8 +583,9 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                                  [] (auto * d) { av_audio_fifo_free(d); });
     if (!fifo) throw MPError("failed to allocate fifo");
 
-    std::vector<FilterFab::sample_t> lb, rb;
-    std::vector<FilterFab::sample_t> lbOut, rbOut;
+
+    FType0<std::variant_alternative_t<0, decltype(filters)>::value_type::element_type::sample_t> ftype0;
+    FType0<std::variant_alternative_t<1, decltype(filters)>::value_type::element_type::sample_t> ftype1;
 
     int pts = 0;
     auto Pts = [&pts] (int samples)
@@ -494,11 +594,6 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         pts += samples;
         return r;
     };
-
-    for (int i = 0; i < normalizers.size(); i++)
-        filters[i]->setNormFactor(normalizers[i]);
-
-    //bool isFirstChunk = true;
 
     // Read one audio frame from the input file into a temporary packet.
     bool input_eof = false;
@@ -577,10 +672,6 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                 throw MPError("channel layout had changed in the middle");
             }
 
-            // Our filter expects the input to be signed a stereo 16-bit planar layout, so our data type is int16_t 
-            FilterFab::sample_t * lbIn;
-            FilterFab::sample_t * rbIn;
-
             // This is the input music file's decoded raw frame
             int nb_samples = frame_in->nb_samples;
 
@@ -594,13 +685,12 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
                 // Dynamically increase the lb, rb vector size to be the maximum number of samples 
                 //  across all decoded raw frames of the input music file
-                if (lb.size() < swrOutSamples) lb.resize(swrOutSamples);
-                if (rb.size() < swrOutSamples) rb.resize(swrOutSamples);
+                filters.index() ? ftype1.resizeIn(swrOutSamples) : ftype0.resizeIn(swrOutSamples);
 
-                uint8_t * buffers[] = { (uint8_t *)lb.data(), (uint8_t *)rb.data() };
+                auto buffers = (filters.index() ? ftype1.buffersIn() : ftype0.buffersIn());
 
                 // Convert the input music file's decoded raw frame to be our desired format (signed 16-bits, planar, 44100 fps)
-                nb_samples = swr_convert(swr_in, buffers, swrOutSamples, (const uint8_t **)frame_in->data, nb_samples);
+                nb_samples = swr_convert(swr_in, buffers.data(), swrOutSamples, (const uint8_t **)frame_in->data, nb_samples);
                 // cannot // assert(nb_samples == cwrOutSamples);
 
                 // 128 bytes gap of Q2 ClaStr filter output to CH
@@ -611,20 +701,11 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                 //    rb.insert(rb.begin(), 128, 0);
                 //    isFirstChunk = false;
                 //}
-
-
-                lbIn = lb.data();
-                rbIn = rb.data();
             }
             // If the input music file is in the format we want
             else
             {
-                lbIn = (FilterFab::sample_t *)frame_in->data[0];
-                rbIn = (FilterFab::sample_t *)frame_in->data[1];
-
-                // Prepare room for the filter
-                if (lb.size() < nb_samples) lb.resize(nb_samples);
-                if (rb.size() < nb_samples) rb.resize(nb_samples);
+                filters.index() ? ftype1.buffersExt(frame_in->data[0], frame_in->data[1], nb_samples) : ftype0.buffersExt(frame_in->data[0], frame_in->data[1], nb_samples);
             }
 
             // Filter-processing
@@ -633,22 +714,21 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
             if (nb_samples > 0)
             {
                 // These are for output data (after filter-processing)
-                if (lbOut.size() < nb_samples) lbOut.resize(nb_samples);
-                if (rbOut.size() < nb_samples) rbOut.resize(nb_samples);
+                (filters.index() ? ftype1.resizeOut(nb_samples) : ftype0.resizeOut(nb_samples));
 
-                for (auto filter = filters.begin(); filter != filters.end(); ++filter)
-                {
-                    (*filter)->filter(lbIn, rbIn, lbOut.data(), rbOut.data(), nb_samples);
+                std::visit([&ftype0, &ftype1, &filters, nb_samples] (auto && fs)
+                           {
+                                for (auto filter = fs.begin(); filter != fs.end(); ++filter)
+                                {
+                                    filters.index() ? ftype1.run(**filter, nb_samples) : ftype0.run(**filter, nb_samples);
 
-                    // Reuse the same lb, rb, lbOut, rbOut buffers when processing through multiple filters
-                    if (filter + 1 != filters.end())
-                    {
-                        lb.swap(lbOut);
-                        rb.swap(rbOut);
-                        lbIn = lb.data();
-                        rbIn = rb.data();
-                    }
-                }
+                                    // Reuse the same lb, rb, lbOut, rbOut buffers when processing through multiple filters
+                                    if (filter + 1 != fs.end())
+                                    {
+                                        filters.index() ? ftype1.swap() : ftype0.swap();
+                                    }
+                                }
+                           }, filters);
 
                 // An extra processing to make the output frame to be our desired 
                 //  channel layout, sampling rate, sample format (44kHz/48kHz/32kHz stereo s16p)
@@ -661,20 +741,19 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                     auto bs = av_samples_get_buffer_size(0, channels, swrOutSamples, audioCodecOut->sample_fmt, 0);
 
                     // Resize to required size but send both buffers even for interleaved
-                    if (lb.size() < bs) lb.resize(bs);
-                    if (rb.size() < bs) rb.resize(bs);
+                    filters.index() ? ftype1.resizeIn(bs) : ftype0.resizeIn(bs);
 
-                    uint8_t * buffersIn[] = { (uint8_t *)lbOut.data(), (uint8_t *)rbOut.data() };
-                    uint8_t * buffersOut[] = { (uint8_t *)lb.data(), (uint8_t *)rb.data() };
+                    auto toConvert = (filters.index() ? ftype1.buffersOut() : ftype0.buffersOut());
+                    auto fromConvert = (filters.index() ? ftype1.buffersIn() : ftype0.buffersIn());
 
-                    nb_samples = swr_convert(swr_out, buffersOut, bs, (const uint8_t **)buffersIn, nb_samples);
-                    writeToFifo(fifo, (void **)buffersOut, nb_samples);
+                    nb_samples = swr_convert(swr_out, fromConvert.data(), bs, (const uint8_t **)toConvert.data(), nb_samples);
+                    writeToFifo(fifo, (void **)fromConvert.data(), nb_samples);
                 }
-                // If the output is already stereo S16P 32kHz/44kHz/48kHz
+                // If the output is already of suitable format
                 else
                 {
-                    uint8_t * buffers[] = { (uint8_t *)lbOut.data(), (uint8_t *)rbOut.data() };
-                    writeToFifo(fifo, (void **)buffers, nb_samples);
+                    auto buffers = (filters.index() ? ftype1.buffersOut() : ftype0.buffersOut());
+                    writeToFifo(fifo, (void **)buffers.data(), nb_samples);
                 }
             }
         }
@@ -747,30 +826,35 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         audioCodecOut.reset();
         avfmt_out.reset();
 
-        int i = 0;
-        bool is_initial = !normalizers.size();
-        for (auto & filter : filters)
-        {
-            if (is_initial)
-                normalizers.push_back(filter->normFactor());
 
-            // normalize only the first ripping filter 
-            if (ripped)
-            {
-                continue;
-            }
+        std::visit([&normalizers, &ripped] (auto && filters)
+                   {
+                       int i = 0;
+                       bool is_initial = !normalizers.size();
 
-            // compute (or update) the normalization factor
-            auto newFactor = filter->calcNormFactor();
-            if (newFactor > 1.0f)
-            {
-                ripped = true;
-                normalizers[i] *= newFactor;
+                       for (auto & filter : filters)
+                       {
+                           if (is_initial)
+                               normalizers.push_back(filter->normFactor());
 
-                msg() << "- Normalizing Filter[" << i << "]: Division Factor = " << normalizers[i];
-            }
-            i++;
-        }
+                           // normalize only the first ripping filter 
+                           if (ripped)
+                           {
+                               continue;
+                           }
+
+                           // compute (or update) the normalization factor
+                           auto newFactor = filter->calcNormFactor();
+                           if (newFactor > 1.0f)
+                           {
+                               ripped = true;
+                               normalizers[i] *= newFactor;
+
+                               msg() << "- Normalizing Filter[" << i << "]: Division Factor = " << normalizers[i];
+                           }
+                           i++;
+                       }
+                   }, filters);
 
         // save the music file only if there is no ripping sound
         if (!normalize || !ripped)

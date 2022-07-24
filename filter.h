@@ -33,8 +33,8 @@ public:
     using sample_t = sampleType;
     using samplew_t = wideSampleType;
 
-    static constexpr sample_t MaxValue = std::is_floating_point_v<sample_t> ? 1. : std::numeric_limits<sample_t>::max();
-    static constexpr sample_t MinValue = std::is_floating_point_v<sample_t> ? -1. : std::numeric_limits<sample_t>::min();
+    //static constexpr sample_t MaxValue = std::is_floating_point_v<sample_t> ? 1.f : std::numeric_limits<sample_t>::max();
+    //static constexpr sample_t MinValue = std::is_floating_point_v<sample_t> ? 5.f : std::numeric_limits<sample_t>::min();
 
     static inline samplew_t smulw(samplew_t a, intfloat_t b)
     {
@@ -90,7 +90,14 @@ public:
     template<typename T>
     static inline T limit(T v)
     {
-        return std::max<T>(MinValue, std::min<T>(MaxValue, v));
+        if constexpr (std::is_floating_point_v<sample_t>)
+        {
+            return std::max<T>(-1., std::min<T>(1., v));
+        }
+        else
+        {
+            return std::max<T>(std::numeric_limits<sample_t>::min(), std::min<T>(std::numeric_limits<sample_t>::max(), v));
+        }
     }
 
     // normalize not to rip the sound
@@ -107,7 +114,7 @@ public:
             {
                 // TODO is any performance impact made by round?
                 // note lround zeroes output for -+Max value which in theory may happen when overflowing samplew type
-                if (sizeof(samplew_t) == 8)
+                if constexpr (sizeof(samplew_t) == 8)
                 {
                     l = std::llround((float)l / normalizer);
                     r = std::llround((float)r / normalizer);
@@ -147,13 +154,28 @@ public:
     {
         float factor_max = 1.0f, factor_min = 1.0f;
 
-        if (global_max > MaxValue)
+        if constexpr (std::is_floating_point_v<sample_t>)
         {
-            factor_max = float(global_max) / MaxValue;
+            if (global_max > 1.)
+            {
+                // division is quite useless 
+                factor_max = global_max / 1.;
+            }
+            if (global_min < -1.)
+            {
+                factor_min = float(global_min) / -1.;
+            }
         }
-        if (global_min < Filter::MinValue)
+        else
         {
-            factor_min = float(global_min) / MinValue;
+            if (global_max > std::numeric_limits<sample_t>::max())
+            {
+                factor_max = float(global_max) / std::numeric_limits<sample_t>::max();
+            }
+            if (global_min < std::numeric_limits<sample_t>::min())
+            {
+                factor_min = float(global_min) / std::numeric_limits<sample_t>::min();
+            }
         }
         return std::max(factor_max, factor_min);
     }

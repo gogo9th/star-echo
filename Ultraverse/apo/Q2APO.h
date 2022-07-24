@@ -9,9 +9,8 @@
 #include "Q2APO_h.h"
 #include "resource.h"
 #include "common/scopedResource.h"
+#include "filter.h"
 
-
-class Filter;
 
 #pragma AVRT_CONST_BEGIN
 
@@ -81,6 +80,8 @@ public:
     static const CRegAPOProperties<1> regProperties;
 
 private:
+    using Filter = ::Filter<float, double>;
+
     bool checkFormat(const UNCOMPRESSEDAUDIOFORMAT & pRequestedFormat);
     void settingsMonitor();
     void parseSettings(const std::wstring & settings);
