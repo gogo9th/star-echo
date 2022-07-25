@@ -310,15 +310,15 @@ std::string MediaProcess::operator()(const FileItem & item) const
 void MediaProcess::process(const FileItem & item) const
 {
     std::vector<float> normalizers;
-    while (true)
-    {
-        if (!do_process(item, normalizers) || !item.normalize)
+    bool ripped = false;
+    do {
+        if (!do_process(item, normalizers, ripped))
             break;
-    }
+    } while (ripped);
 }
 
 
-bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normalizers) const
+bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normalizers, bool & ripped) const
 {
     //#if defined(_DEBUG)
     //    msg() << item.output.string();
@@ -421,7 +421,6 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                    for (size_t i = 0; i < normalizers.size(); i++)
                        filters[i]->setNormFactor(normalizers[i]);
                }, filters);
-
 
 
     // SwrContext contains the audio file's sound quality parameters, such as the audio channel left/right flags (mono/stereo), 
@@ -813,7 +812,6 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         }
     }
 
-    bool ripped = false;
     if (r == 0)
     {
         // Encode all unencoded remaining data and flush them to the output music file
@@ -826,39 +824,41 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         audioCodecOut.reset();
         avfmt_out.reset();
 
-
-        std::visit([&normalizers, &ripped] (auto && filters)
-                   {
-                       int i = 0;
-                       bool is_initial = !normalizers.size();
-
-                       for (auto & filter : filters)
+        ripped = false;
+        if (normalize)
+        {
+            std::visit([&filters, &normalizers, &ripped] (auto && filters)
                        {
-                           if (is_initial)
-                               normalizers.push_back(filter->normFactor());
+                           bool is_initial = normalizers.empty();
 
-                           // normalize only the first ripping filter 
-                           if (ripped)
+                           int i = 0;
+                           for (auto & filter : filters)
                            {
-                               continue;
+                               if (is_initial)
+                                   normalizers.push_back(filter->normFactor());
+
+                               // normalize only the first ripping filter 
+                               if (ripped)
+                               {
+                                   continue;
+                               }
+
+                               // compute (or update) the normalization factor
+                               auto newFactor = filter->calcNormFactor();
+                               if (newFactor > 1.0f)
+                               {
+                                   ripped = true;
+                                   normalizers[i] *= newFactor;
+
+                                   msg() << "- Normalizing Filter[" << i << "]: Division Factor = " << normalizers[i];
+                               }
+                               i++;
                            }
-
-                           // compute (or update) the normalization factor
-                           auto newFactor = filter->calcNormFactor();
-                           if (newFactor > 1.0f)
-                           {
-                               ripped = true;
-                               normalizers[i] *= newFactor;
-
-                               msg() << "- Normalizing Filter[" << i << "]: Division Factor = " << normalizers[i];
-                           }
-                           i++;
-                       }
-                   }, filters);
-
+                       }, filters);
+        }
         // save the music file only if there is no ripping sound
-        if (!normalize || !ripped)
+        if (!ripped)
             std::filesystem::rename(tempOut, item.output);
     }
-    return r == 0 && ripped;
+    return r == 0;
 }
