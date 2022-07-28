@@ -827,12 +827,12 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         ripped = false;
         if (normalize)
         {
-            std::visit([&filters, &normalizers, &ripped] (auto && filters)
+            std::visit([&filters, &normalizers, &ripped] (auto && filters2)
                        {
                            bool is_initial = normalizers.empty();
 
                            int i = 0;
-                           for (auto & filter : filters)
+                           for (auto & filter : filters2)
                            {
                                if (is_initial)
                                    normalizers.push_back(filter->normFactor());

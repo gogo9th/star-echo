@@ -4,7 +4,7 @@
 #include <map>
 
 #include <boost/algorithm/string.hpp>
-
+#include "log.hpp"
 #include "filter.h"
 #include "utils.h"
 #include "DNSE_CH.hpp"
