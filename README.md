@@ -48,22 +48,45 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 <b><u>Step 4.</u></b> Run the created `q2cathedral`.
 ```console
     $ ./q2cathedral --help 
-    Options:
-      -h [ --help ]         Display the help message.
-      -i [ --input ] arg    Input file(s)/directory.
-                            - [Default: the current directory]
-      -o [ --output ] arg   If the input is a directory, then output should be a 
-                            directory.
-                            If the input is a file, then the output should be a filename.
-                            If the inputs are multiple files, then this option is ignored.
-                            - [Default: './FINAL' directory]
-      -t [ --threads ] arg  The number of CPU threads to run.
-                            - [Default: the processor's available total cores]
-      -f [ --filter ] arg   Filter(s) to be applied: 
-                              CH[,roomSize[,gain]].
-                            - [Default: CH[10,9]] (where 'CH' is Cathedral)
-      -k [ --keepFormat ]   Keep each output file's format to each the same as its source file's.
-                            - [Default: the output format is .flac]
+Options:
+  -h [ --help ]         Display the help message.
+  -i [ --input ] arg    Input file(s)/directory.
+                        - [Default: the current directory]
+  -o [ --output ] arg   If the input is a directory, then output should be a
+                        directory.
+                        If the input is a file, then the output should be a
+                        filename.
+                        If the inputs are multiple files, then this option is
+                        ignored.
+                        - [Default: './FINAL' directory]
+  -t [ --threads ] arg  The number of CPU threads to run.
+                        - [Default: the processor's available total cores]
+  -k [ --keepFormat ]   Keep each output file's format the same as its source
+                        file's.
+                        - [Default: the output format is .flac]
+  -w [ --overwrite ]    overwrite output file if it exists [Default: false]
+  -n [ --normalize ]    normalize the sound to avoid rips [Default: false]
+  -f [ --filter ] arg   Filter(s) to be applied:
+                         CH[,roomSize[,gain]] - Cathedral,
+                           Default is 'CH,10,9' if parameters omitted
+                         EQ,b1,b2,b3,b4,b5,b6,b7 - Equalizer,
+                           0<=b<=24, b=12 is '0 gain'
+                         3D,strength,reverb,delay - 3D effect
+                           0 <= parameters <= 9
+                         BE,level,cutoff - Bass enhancement
+                           1 <= parameters <= 15
+                        Predefined filters:
+                         studio,
+                         rock,
+                         classical,
+                         jazz,
+                         dance,
+                         ballad,
+                         club,
+                         RnB,
+                         cafe,
+                         concert,
+                         church
 ```
 
 
@@ -85,7 +108,7 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 <b><u>Step 4.</u></b> Install the boost and ffmpeg libraries
 
 ```console
-    $ ./vcpkg.exe install boost-program-options boost-algorithm ffmpeg[avformat] ffmpeg[avcodec] ffmpeg[swresample] ffmpeg[zlib] --triplet x64-windows
+    $ ./vcpkg.exe install boost-program-options boost-circular-buffer boost-algorithm ffmpeg[avformat] ffmpeg[avcodec] ffmpeg[swresample] ffmpeg[zlib] --triplet x64-windows
 ```
 (For x32 builds, run `"vcpkg install boost-program-options default"` instead)
 
