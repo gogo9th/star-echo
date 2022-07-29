@@ -104,8 +104,8 @@ Predefined filters:\n\
  club,\n\
  RnB,\n\
  cafe,\n\
- concert,\n\
  livecafe,\n\
+ concert,\n\
  church\n\
 ")
 ;
