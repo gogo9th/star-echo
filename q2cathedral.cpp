@@ -105,6 +105,7 @@ Predefined filters:\n\
  RnB,\n\
  cafe,\n\
  concert,\n\
+ livecafe,\n\
  church\n\
 ")
 ;
