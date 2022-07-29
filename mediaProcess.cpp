@@ -17,8 +17,9 @@ extern "C" {
 
 #include <boost/algorithm/string.hpp>
 
-#include "mediaProcess.h"
 #include "log.hpp"
+
+#include "mediaProcess.h"
 
 
 av_always_inline std::string av_err2string(int errnum)
@@ -827,12 +828,12 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         ripped = false;
         if (normalize)
         {
-            std::visit([&filters, &normalizers, &ripped] (auto && filters2)
+            std::visit([&normalizers, &ripped] (auto && filters)
                        {
                            bool is_initial = normalizers.empty();
 
                            int i = 0;
-                           for (auto & filter : filters2)
+                           for (auto & filter : filters)
                            {
                                if (is_initial)
                                    normalizers.push_back(filter->normFactor());
