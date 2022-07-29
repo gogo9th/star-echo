@@ -109,7 +109,8 @@ Options:
 <b><u>Step 4.</u></b> Install the boost and ffmpeg libraries
 
 ```console
-    $ ./vcpkg.exe integrate install boost-program-options boost-circular-buffer boost-algorithm ffmpeg[avformat] ffmpeg[avcodec] ffmpeg[swresample] ffmpeg[zlib] --triplet x64-windows
+    $ ./vcpkg.exe install boost-program-options boost-circular-buffer boost-algorithm ffmpeg[avformat] ffmpeg[avcodec] ffmpeg[swresample] ffmpeg[zlib] --triplet x64-windows
+    $ ./vcpkg.exe integrate install
 ```
 (For x32 builds, run `"vcpkg install boost-program-options default"` instead)
 
