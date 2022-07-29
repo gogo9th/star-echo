@@ -64,8 +64,8 @@ enum
     NI_Club,
     NI_RnB,
     NI_Cafe,
-    NI_Concert,
     NI_LiveCafe,
+    NI_Concert,
     NI_Church,
     NI_Disable,
     NI_Enable,
@@ -85,8 +85,8 @@ static const std::map<int, const wchar_t *> modes_ = {
     { NI_Club,        L"club" },
     { NI_RnB,         L"rnb" },
     { NI_Cafe,        L"cafe" },
-    { NI_Concert,     L"concert" },
     { NI_LiveCafe,    L"livecafe" },
+    { NI_Concert,     L"concert" },
     { NI_Church,      L"church" },
 };
 
@@ -233,8 +233,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             InsertMenuW(hMenu, NI_Club,     MF_BYCOMMAND, NI_Club,      L"Club");
             InsertMenuW(hMenu, NI_RnB,      MF_BYCOMMAND, NI_RnB,       L"R&&B");
             InsertMenuW(hMenu, NI_Cafe,     MF_BYCOMMAND, NI_Cafe,      L"Cafe");
-            InsertMenuW(hMenu, NI_Concert,  MF_BYCOMMAND, NI_Concert,   L"Concert");
             InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe,  L"Live Cafe");
+            InsertMenuW(hMenu, NI_Concert,  MF_BYCOMMAND, NI_Concert,   L"Concert");
             InsertMenuW(hMenu, NI_Church,   MF_BYCOMMAND, NI_Church,    L"Church");
 
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
