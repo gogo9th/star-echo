@@ -44,6 +44,7 @@ public:
             { L"rnb", L"eq,13,19,15,13,13,15,11" },
             { L"cafe", L"ch,1,7" },
             { L"concert", L"ch,5,7" },
+            { L"livecafe", L"ch,13,10" },
             { L"church", L"ch,10,9" },
         };
 
