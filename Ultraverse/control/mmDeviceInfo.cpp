@@ -7,7 +7,7 @@
 
 #include "common/registry.h"
 #include "common/stringUtils.h"
-#include <apo/Q2APO.h>
+#include "apo/Q2APO.h"
 
 
 static auto renderKey_ = L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\MMDevices\\Audio\\Render\\"s;

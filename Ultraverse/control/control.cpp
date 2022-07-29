@@ -10,8 +10,6 @@
 #include "common/registry.h"
 #include "common/settings.h"
 
-#include "../apo/Q2APO.h"
-
 #include <Shellapi.h>
 #include <control/mmDevices.h>
 
