@@ -23,7 +23,7 @@ namespace po = boost::program_options;
 static const std::array<std::string, 9> fileExts_ { ".aac", ".gsm", ".wav", ".wavpack", ".ass", ".tta",".flac", ".wma", ".mp3" };
 
 
-static std::filesystem::path outputFilePath(const std::filesystem::path & inputPath, std::string outputOptional)
+static std::filesystem::path outputFilePath(const std::filesystem::path & inputPath, const std::filesystem::path & outputOptional)
 {
     if (inputPath.has_extension()
         && std::find_if(fileExts_.begin(), fileExts_.end(),
@@ -41,7 +41,7 @@ static std::filesystem::path outputFilePath(const std::filesystem::path & inputP
         }
         else
         {
-            outputPath = std::filesystem::absolute(outputOptional);
+            outputPath = outputOptional;
         }
         return outputPath;
     }
@@ -58,15 +58,46 @@ bool isInDirectory(const std::filesystem::path & child, const std::filesystem::p
     return itr == normChild.begin();
 }
 
+#if defined(_WIN32)
+
+#include <Windows.h>
+using ustring = std::wstring;
+#define U(s) L##s
+
+template<typename T>
+po::typed_value<T, wchar_t> * uvalue(T * v)
+{
+    return new po::typed_value<T, wchar_t>(v);
+}
+
+int wmain(int argc, wchar_t ** argv)
+
+#else
+
+using ustring = std::string;
+#define U(s) s
+
+template<typename T>
+po::typed_value<T, char> * uvalue(T * v)
+{
+    return new po::typed_value<T, char>(v);
+}
+
 int main(int argc, char ** argv)
+
+#endif
+
 {
 #if defined(_DEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
     setlocale(LC_ALL, "en_US.UTF-8");
+#if defined(_WIN32)
+    SetConsoleOutputCP(CP_UTF8);
+#endif
 
-    std::vector<std::string> input;
-    std::string output;
+    std::vector<ustring> input;
+    ustring output;
     std::vector<std::string> filters;
     int threads = 0;
     bool keepFormat = false;
@@ -78,8 +109,8 @@ int main(int argc, char ** argv)
     po::options_description options("Options");
     options.add_options()
         ("help,h", "Display the help message.")
-        ("input,i", po::value(&input)->composing(), "Input file(s)/directory.\n- [Default: the current directory]")
-        ("output,o", po::value(&output), "If the input is a directory, then output should be a directory.\nIf the input is a file, then the output should be a filename.\nIf the inputs are multiple files, then this option is ignored.\n- [Default: './FINAL' directory]")
+        ("input,i", uvalue(&input)->composing(), "Input file(s)/directory.\n- [Default: the current directory]")
+        ("output,o", uvalue(&output), "If the input is a directory, then output should be a directory.\nIf the input is a file, then the output should be a filename.\nIf the inputs are multiple files, then this option is ignored.\n- [Default: './FINAL' directory]")
         ("threads,t", po::value(&threads), "The number of CPU threads to run.\n- [Default: the processor's available total cores]")
         ("keepFormat,k", po::bool_switch(&keepFormat), "Keep each output file's format the same as its source file's.\n- [Default: the output format is .flac]")
         ("overwrite,w", po::bool_switch(&overwrite), "overwrite output file if it exists [Default: false]")
@@ -113,7 +144,11 @@ Predefined filters:\n\
     posd.add("input", -1);
     try
     {
-        po::store(po::command_line_parser(argc, argv).options(options).positional(posd).run(), opts_map);
+        #if defined(_WIN32)
+        po::store(po::wcommand_line_parser(argc, argv).options(options).positional(posd).run(), opts_map);
+        #else
+        po::store(po::command_line_parser(argc, argv).options(options).positional(posd).run(), opts_map, false);
+        #endif
         po::notify(opts_map);
     }
     catch (po::error & e)
@@ -137,18 +172,17 @@ Predefined filters:\n\
 
     if (input.empty())
     {
-        input.push_back(".");
+        input.push_back(U("."));
     }
 
     for (const auto & i : input)
     {
-        std::filesystem::path inputPath(std::filesystem::absolute(i));
-
+        std::filesystem::path inputPath(std::filesystem::absolute((i)));
         if (std::filesystem::is_directory(inputPath))
         {
             if (output.empty())
             {
-                output = "./FINAL";
+                output = U("./FINAL");
             }
             std::filesystem::path outputPath = std::filesystem::absolute(output);
 
@@ -182,7 +216,7 @@ Predefined filters:\n\
         }
         else if (std::filesystem::is_regular_file(inputPath))
         {
-            auto outputFile = outputFilePath(inputPath, output);
+            auto outputFile = outputFilePath(inputPath, std::filesystem::absolute(output));
             if (!outputFile.empty())
             {
                 if (!keepFormat)
@@ -201,7 +235,6 @@ Predefined filters:\n\
             return -1;
         }
     }
-
 
     if (inputFiles.empty())
     {

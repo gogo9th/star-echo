@@ -85,10 +85,14 @@ private:
             Workitem item;
             if (next(item))
             {
-                std::string r = (*worker_)(item);
+                auto r = (*worker_)(item);
                 {
                     std::lock_guard lock(runMtx_);
-                    msg() << "[CPU " << threadIndex + 1 << "] " << ++runIdx_ << '/' << items_.size() << "  " << r;
+                #if defined(_WIN32)
+                        wmsg() << L"[CPU " << threadIndex + 1 << L"] " << ++runIdx_ << L'/' << items_.size() << L"  " << r;
+                #else
+                        msg() << "[CPU " << threadIndex + 1 << "] " << ++runIdx_ << '/' << items_.size() << "  " << r;
+                #endif
                 }
 
                 // more work to do

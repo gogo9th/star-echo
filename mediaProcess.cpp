@@ -283,11 +283,36 @@ struct FType0
 
 //
 
-std::string MediaProcess::operator()(const FileItem & item) const
+#if defined(_WIN32)
+std::wstring
+#else
+std::string
+#endif
+MediaProcess::operator()(const FileItem & item) const
 {
     try
     {
         process(item);
+        // libc cannot into wstring https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102839
+    #if defined(_WIN32)
+        return item.output.wstring() + L" (FINISHED)";
+    }
+    catch (const MPError & e)
+    {
+        if (e.isError())
+        {
+            return item.output.wstring() + L" failed : " + stringToWstring(e.what());
+        }
+        else
+        {
+            return item.output.wstring() + L" : " + stringToWstring(e.what());
+        }
+    }
+    catch (const std::exception & e)
+    {
+        return item.output.wstring() + L" exception : " + stringToWstring(e.what());
+    }
+    #else
         return item.output.string() + " (FINISHED)";
     }
     catch (const MPError & e)
@@ -305,6 +330,7 @@ std::string MediaProcess::operator()(const FileItem & item) const
     {
         return item.output.string() + " exception : " + e.what();
     }
+#endif
 }
 
 

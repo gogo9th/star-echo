@@ -26,7 +26,12 @@ public:
         : filterFab_(fab)
     {}
 
-    std::string operator()(const FileItem & item) const;
+    #if defined(_WIN32)
+    std::wstring
+    #else
+    std::string
+    #endif
+        operator()(const FileItem & item) const;
 
 private:
     void process(const FileItem & item) const;
