@@ -10,6 +10,7 @@
 #include "DNSE_EQ.hpp"
 #include "DNSE_3D.hpp"
 #include "DNSE_BE.hpp"
+#include "DNSE_AuUp.hpp"
 #include "DbReduce.hpp"
 
 
@@ -68,7 +69,7 @@ public:
                     return false;
                 }
 
-                descs_.push_back(filter);
+                descs_.push_back(std::move(filter));
             }
         }
 
@@ -162,6 +163,10 @@ private:
 
                 auto intParams = getIntParams<int, 2>(params);
                 filters.push_back(std::make_unique<DNSE_BE<sampleType, wideSampleType>>(intParams[0], intParams[1]));
+            }
+            else if (boost::iequals(filterName, "up"))
+            {
+                filters.push_back(std::make_unique<DNSE_AuUp<sampleType, wideSampleType>>(5, 0));
             }
             else
             {

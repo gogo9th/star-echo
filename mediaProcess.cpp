@@ -408,6 +408,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     // *** Set up the input format ctx ***
 
     std::variant<
+        //std::vector<std::unique_ptr<Filter<int16_t, int32_t>>>,
         std::vector<std::unique_ptr<Filter<int32_t, int64_t>>>,
         std::vector<std::unique_ptr<Filter<float, double>>>
     > filters;
@@ -421,6 +422,8 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     }
     else
     {
+        //filters = filterFab_.create<int16_t, int32_t >();
+        //filterFormat = AV_SAMPLE_FMT_S16P;
         filters = filterFab_.create<int32_t, int64_t>();
         filterFormat = AV_SAMPLE_FMT_S32P;
     }

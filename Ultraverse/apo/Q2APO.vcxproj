@@ -180,6 +180,12 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\DNSE_AuUp_params.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\DNSE_BE_params.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -210,6 +216,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\DbReduce.hpp" />
     <ClInclude Include="..\..\DNSE_3D.hpp" />
+    <ClInclude Include="..\..\DNSE_AuUp.hpp" />
+    <ClInclude Include="..\..\DNSE_AuUp_params.h" />
     <ClInclude Include="..\..\DNSE_BE.hpp" />
     <ClInclude Include="..\..\DNSE_BE_params.h" />
     <ClInclude Include="..\..\DNSE_CH.hpp" />

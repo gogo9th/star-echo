@@ -13,6 +13,9 @@
     <ClCompile Include="..\..\DNSE_BE_params.cpp">
       <Filter>Q2</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\DNSE_AuUp_params.cpp">
+      <Filter>Q2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Q2APO.h" />
@@ -46,6 +49,12 @@
       <Filter>Q2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\DNSE_BE_params.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DNSE_AuUp_params.h">
+      <Filter>Q2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DNSE_AuUp.hpp">
       <Filter>Q2</Filter>
     </ClInclude>
   </ItemGroup>

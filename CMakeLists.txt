@@ -38,7 +38,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   string(REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 endif()
 
-add_executable(${PROJECT_NAME} "q2cathedral.cpp" "q2cathedral.h" "log.hpp"  "threaded.h"  "filter.h" "DNSE_CH.hpp"  "mediaProcess.h" "mediaProcess.cpp" "utils.h" "DNSE_EQ.hpp"  "FilterFabric.hpp"  "DNSE_BE.hpp" "DNSE_3D.hpp" "DbReduce.hpp" "DNSE_BE_params.cpp" "DNSE_BE_params.h" "DNSE_CH_params.cpp" "DNSE_CH_params.h")
+add_executable(${PROJECT_NAME} "q2cathedral.cpp" "q2cathedral.h" "log.hpp"  "threaded.h"  "filter.h" "DNSE_CH.hpp"  "mediaProcess.h" "mediaProcess.cpp" "utils.h"
+"DNSE_EQ.hpp"  "FilterFabric.hpp"  "DNSE_BE.hpp" "DNSE_3D.hpp" "DNSE_AuUp.hpp" "DbReduce.hpp" "DNSE_BE_params.cpp" "DNSE_BE_params.h" "DNSE_CH_params.cpp" "DNSE_CH_params.h" "DNSE_AuUp_params.cpp" "DNSE_AuUp_params.h")
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} PkgConfig::LIBAV)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
