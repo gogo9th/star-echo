@@ -422,6 +422,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     }
     else
     {
+        // ! update params.codec_id !
         //filters = filterFab_.create<int16_t, int32_t >();
         //filterFormat = AV_SAMPLE_FMT_S16P;
         filters = filterFab_.create<int32_t, int64_t>();
@@ -515,6 +516,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         else
         {
             params.codec_id = AV_CODEC_ID_PCM_S32LE;
+            //params.codec_id = AV_CODEC_ID_PCM_S16LE;
         }
     }
 

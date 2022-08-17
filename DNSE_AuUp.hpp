@@ -17,21 +17,72 @@ public:
 
     DNSE_AuUp(int v1, int v2)
         : Filter({ 44100, })
-    {
-
-    }
+    {}
 
     void setSamplerate(int sampleRate) override
     {
-        auto lv = (0x8A3 * (sampleRate >> 9) * 0x80/*dword_1C8910*/ - 0x10DE5C0) / 1000 + 0x2CCC;
-        level = std::max(0x2CCC, std::min(lv, 0x71EC));
+        samplerate_ = sampleRate;
+        e_low = 5000 / (samplerate_ >> 9);
+        e_point = e_point_prev = 0x80;
+        e_point_d = 0x400000;
+        e_direction = e_direction_prev = false;
+
+        psrL_.setup(e_point, samplerate_);
+        psrR_.setup(e_point, samplerate_);
     }
 
     void filter(sample_t l, const sample_t r,
                 sample_t * l_out, sample_t * r_out) override
     {
-        fft.in(l, r);
+        if (fftToSkip == 0)
+        {
+            // [block] (fft * 9 rounds) [9 * block] [permute] [energy] [psr update]
 
+            if (fft.in(l, r))
+            {
+                // then we skip 13 rounds of 128 bytes input
+                fftToSkip = 13 * 128;
+
+                auto e = fft.energy();
+
+                e_slider = e_direction == e_direction_prev ? e_slider * 2 : e_slider / 2;
+                e_slider = std::max(1, std::min(e_slider, 0x10));
+
+                e_direction_prev = e_direction;
+                e_direction = e[e_point] > 0x863;
+
+                e_point = e_direction ? e_point + e_slider : e_point - e_slider;
+                e_point = std::max(e_low, std::min(e_point, 0xFF));
+
+                auto epd_next = (0x3334LL * (e_point << 15) + 0x4CCCLL * e_point_d) >> 15;
+                e_point_new = epd_next >> 15;
+                e_point_d = epd_next;
+            }
+        }
+        else
+        {
+            if (fftToSkip == 128)
+            {
+                // point is updated at the end of 'last' block so last block should be filtered with updated coefs
+                if (std::abs(e_point_new - e_point_prev) > 3)
+                {
+                    e_point_prev = e_point_new;
+
+                    psrL_.setup(e_point_new, samplerate_);
+                    psrR_.setup(e_point_new, samplerate_);
+                }
+            }
+
+            --fftToSkip;
+        }
+
+        auto pl = psrL_.filter(l);
+        auto pr = psrR_.filter(r);
+
+        normalize(pl, pr);
+
+        *l_out = pl;
+        *r_out = pr;
     }
 
 private:
@@ -46,6 +97,7 @@ private:
             auto size = 1 << power;
             perm.resize(size);
             complex.resize(2 * size);
+            energy_.resize(size / 2);
 
             assert(std::size(DNSE_AuUp_Params::fft_window) == size / 2);
 
@@ -89,6 +141,10 @@ private:
             {
                 fft_dfreq_frwd(round);
             }
+
+            fft_permute();
+            fft_energy();
+
             return true;
         }
 
@@ -98,16 +154,22 @@ private:
             return false;
         }
 
+        const std::vector<int> & energy()
+        {
+            return energy_;
+        };
+
     private:
         void fft_dfreq_frwd(int round)
         {
             auto psz = 1 << power_;
             auto blocksz = (1 << round);
 
+
             if (round < power_ - 2)
             {
-                auto coff = 2 * (psz >> (round + 1));
                 auto pc = complex.data();
+                auto coff = 2 * (psz >> (round + 1));
                 auto pcoff = complex.data() + coff;
                 for (size_t iOuter = 0; iOuter < (1 << round); iOuter++)
                 {
@@ -124,7 +186,7 @@ private:
                     {
                         auto ptw = DNSE_AuUp_Params::fft_twiddle + 2 * blocksz;
 
-                        for (size_t iInner = 2 * blocksz; iInner < (psz >> 1); iInner += blocksz)
+                        for (size_t iInner = 2 * blocksz; iInner <= (psz >> 1); iInner += blocksz)
                         {
                             auto d2 = pc[2] - pcoff[2];
                             auto d3 = pc[3] - pcoff[3];
@@ -139,27 +201,234 @@ private:
 
                             pcoff += 2;
                             pc += 2;
+                            ptw += 2 * blocksz;
                         }
+                        pc += 2;
+                        pcoff += 2;
                     }
 
-                    pc += 2 + coff;
-                    pcoff += 2 + coff;
+                    pc += coff;
+                    pcoff += coff;
                 }
             }
             else if (round == power_ - 2)
-            { }
+            {
+                for (int * pc = complex.data(); pc < complex.data() + complex.size(); pc += 8)
+                {
+                    const auto c0 = pc[0];
+                    const auto c1 = pc[1];
+                    const auto c2 = pc[2];
+                    const auto c3 = pc[3];
+                    const auto c4 = pc[4];
+                    const auto c5 = pc[5];
+                    const auto c6 = pc[6];
+                    const auto c7 = pc[7];
+                    pc[0] = c0 + c4;
+                    pc[1] = c1 + c5;
+                    pc[2] = c2 + c6;
+                    pc[3] = c3 + c7;
+                    pc[4] = c0 - c4;
+                    pc[5] = c1 - c5;
+                    pc[6] = c3 - c7;
+                    pc[7] = c6 - c2;
+                }
+            }
             else if (round == power_ - 1)
-            { }
+            {
+                for (int * pc = complex.data(); pc < complex.data() + complex.size(); pc += 4)
+                {
+                    const auto c0 = pc[0];
+                    const auto c1 = pc[1];
+                    const auto c2 = pc[2];
+                    const auto c3 = pc[3];
+                    pc[0] = c0 + c2;
+                    pc[1] = c1 + c3;
+                    pc[2] = c0 - c2;
+                    pc[3] = c1 - c3;
+                }
+            }
+        }
+
+        void fft_permute()
+        {
+            auto psz = 1 << power_;
+            for (size_t j = 0; j < (psz >> 1); j++)
+            {
+                auto ip = perm[j];
+                if (j < ip)
+                {
+                    std::swap(complex[2 * j], complex[2 * ip]);
+                    std::swap(complex[2 * j + 1], complex[2 * ip + 1]);
+                }
+            }
+        }
+
+        void fft_energy()
+        {
+            auto psz = 1 << power_;
+            for (size_t i = 0; i < (psz >> 1); i++)
+            {
+                auto e = int64_t(complex[2 * i]) * complex[2 * i] + int64_t(complex[2 * i + 1]) * complex[2 * i + 1];
+                if (e >= 0x7FFFFFFF) e = 0x7FFFFFFF;
+                energy_[i] = (e * 0xCCE + (int64_t)energy_[i] * 0x7332) >> 15;
+            }
         }
 
         const int power_;
 
         size_t offset = 0;
         std::vector<int> complex;
+        std::vector<int> energy_;
 
         std::vector<int> perm;
     };
 
-    int level;
+    class PsrBiquad
+    {
+    public:
+        PsrBiquad() = default;
+
+        void setup(const std::array<int16_t, 6> & coef)
+        {
+            if constexpr (std::is_integral_v<sample_t>)
+                coef_ = coef;
+            else if constexpr (std::is_floating_point_v<sample_t>)
+                coef_ = coef / float(0x10000);
+        }
+
+        samplew_t filter(samplew_t in)
+        {
+            auto nxt = 2 * (smulw(2 * in, coef_[0])
+                            + smulw(delay_[0], coef_[1]) + smulw(delay_[1], coef_[2])
+                            + smulw(delay_[2], coef_[4]) + smulw(delay_[3], coef_[5]));
+            delay_.push_front(2 * in);
+            delay_[2] = 2 * nxt;
+            return nxt;
+        }
+
+    private:
+        boost::circular_buffer<samplew_t>   delay_ { 4, 0 };
+        std::array<int16float_t, 6>         coef_ { 0 };
+    };
+
+
+    static inline int fr31div(int a1, int a2)
+    {
+        return ((int64_t)a1 << 31) / a2;
+    }
+
+    static inline int fr31mul(int a1, int a2)
+    {
+        return ((int64_t)a1 * a2) >> 31;
+    }
+
+
+    class Psr
+    {
+        static int auup_cos(int v)
+        {
+            const static int coef[] = { 0x6487ED50, -0x295779CB, 0x519AF19, -0x4CB4B3, };
+
+            if (std::abs(v) > 0x3FFFFFFF)
+            {
+                v = v >= 0 ? 0x7FFFFFFF - v : -0x7FFFFFFF - v;
+            }
+
+            int v2 = 2 * v;
+            int vQ = fr31mul(v2, v2);
+            int r = 0;
+            for (auto c : coef)
+            {
+                r += fr31mul(c, v2);
+                v2 = fr31mul(v2, vQ);
+            }
+            return 2 * r;
+        }
+
+        std::array<int16_t, 6> psrCoef(int ep, int uq, int samplerate)
+        {
+            std::array<int16_t, 6> coef;
+
+            auto pt = 2 * fr31div(ep, samplerate);
+
+            auto v6 = fr31mul(uq, auup_cos(pt)) / 2;
+            auto p2 = fr31div(0x3FFFFFFF, v6 + 0x3FFFFFFF);   // + 1/2
+            auto vsin = auup_cos(pt + 0x3FFFFFFF);
+            coef[0] = fr31mul(vsin / 4 + 0x1FFFFFFF, p2) >> 16;   // + 1/4
+            coef[1] = fr31mul(-0x3FFFFFFF - vsin / 2, p2) >> 16;
+            coef[2] = fr31mul(vsin / 4 + 0x1FFFFFFF, p2) >> 16;
+            coef[3] = 0x3FFF;
+            coef[4] = -fr31mul(-vsin, p2) >> 16;
+            coef[5] = -fr31mul(0x3FFFFFFF - v6, p2) >> 16;
+
+            return coef;
+        }
+
+    public:
+        void setup(int ep, int samplerate)
+        {
+            auto epr = (samplerate >> 9) * ep;
+            level = (0x8A3 * epr - 0x10DE5C0) / 1000 + 0x2CCC;
+            level = std::max(0x2CCC, std::min(level, 0x71EC));
+
+            bq1.setup(psrCoef(epr, 0x7FFFFFFF, samplerate));
+            bq2.setup(psrCoef(epr, 0x2AAAAAAA, samplerate));
+
+            //dword_1C86C4 = 0x7FFFFFFF;
+            //unk_1C86C0 = 0x7FFFFFFF;
+        }
+
+        template<typename T = sample_t, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+        samplew_t filter(sample_t in)
+        {
+            return 0;
+        }
+
+        template<typename T = sample_t, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+        samplew_t filter(sample_t in)
+        {
+            delay_.push_back(in);
+
+            // originally ix is step by +2 but we are moving against shifting delay buffer
+            auto ix0 = (0xFF + ix) & 0xFF;
+            auto ix1 = (0x7F + ix) & 0xFF;
+
+            ix = (ix + 1) & 0xFF;
+            auto mx = ix >= 0x80 ? 0xFF - ix : ix;
+
+            auto v0 = delay_[ix0];
+            auto v1 = delay_[ix1];
+
+            auto v = (((v0 * mx) >> 7) + ((v1 * (0x7F - mx)) >> 7)) << 14;
+
+            auto q1 = bq1.filter(v);
+            auto q2 = bq2.filter(q1);
+
+            return in + (smulw(q2, level) >> 13);
+        }
+
+    private:
+        int level = 0;
+        PsrBiquad bq1;
+        PsrBiquad bq2;
+
+        boost::circular_buffer<sample_t>   delay_ { 256, 0 };
+        int ix = 0;
+    };
+
+
+    int samplerate_ = 0;
     FFT fft;
+    int fftToSkip = 0;
+
+    bool e_direction = false;
+    bool e_direction_prev = false;
+    int e_slider = 2;
+    int e_point = 0x80;
+    int e_point_new = 0x80;
+    int e_point_prev = 0x80;
+    int e_point_d = 0x400000;
+    int e_low = 0;
+
+    Psr psrL_, psrR_;
 };
