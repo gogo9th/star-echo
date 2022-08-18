@@ -111,7 +111,6 @@ private:
                 }
                 perm[i] = p;
             }
-
         }
 
         template<typename T = sample_t, std::enable_if_t<std::is_integral_v<T>, bool> = true>
@@ -129,12 +128,12 @@ private:
             // complex is filled in
 
             // apply window
-            auto pWnd = DNSE_AuUp_Params::fft_window;
             for (size_t i = 0; i < complex.size() / 2; i += 2)
             {
-                complex[i] = (samplew_t(complex[i]) * *pWnd) >> 15;
-                complex[complex.size() - i - 2] = (samplew_t(complex[complex.size() - i - 2]) * *pWnd) >> 15;
-                ++pWnd;
+                sample_t wnd = DNSE_AuUp_Params::fft_window[i / 2];
+
+                complex[i] = (complex[i] * wnd) >> 15;
+                complex[complex.size() - i - 2] = (complex[complex.size() - i - 2] * wnd) >> 15;
             }
 
             for (size_t round = 0; round < power_; round++)
@@ -154,7 +153,7 @@ private:
             return false;
         }
 
-        const std::vector<int> & energy()
+        const std::vector<samplew_t> & energy()
         {
             return energy_;
         };
@@ -213,7 +212,7 @@ private:
             }
             else if (round == power_ - 2)
             {
-                for (int * pc = complex.data(); pc < complex.data() + complex.size(); pc += 8)
+                for (auto * pc = complex.data(); pc < complex.data() + complex.size(); pc += 8)
                 {
                     const auto c0 = pc[0];
                     const auto c1 = pc[1];
@@ -235,7 +234,7 @@ private:
             }
             else if (round == power_ - 1)
             {
-                for (int * pc = complex.data(); pc < complex.data() + complex.size(); pc += 4)
+                for (auto * pc = complex.data(); pc < complex.data() + complex.size(); pc += 4)
                 {
                     const auto c0 = pc[0];
                     const auto c1 = pc[1];
@@ -268,8 +267,22 @@ private:
             auto psz = 1 << power_;
             for (size_t i = 0; i < (psz >> 1); i++)
             {
-                auto e = int64_t(complex[2 * i]) * complex[2 * i] + int64_t(complex[2 * i + 1]) * complex[2 * i + 1];
-                if (e >= 0x7FFFFFFF) e = 0x7FFFFFFF;
+                int64_t e;
+                if constexpr (sizeof(sample_t) >= 4)
+                {
+                    // we sligtly dont fit x64 for squares of x32 type
+                    auto v1 = int64_t(complex[2 * i]) >> 16;
+                    auto v2 = int64_t(complex[2 * i + 1]) >> 16;
+                    e = v1 * v1 + v2 * v2;
+                }
+                else
+                {
+                    auto v1 = int64_t(complex[2 * i]);
+                    auto v2 = int64_t(complex[2 * i + 1]);
+                    e = v1 * v1 + v2 * v2;
+                }
+                    
+                if (e >= std::numeric_limits<samplew_t>::max()) e = std::numeric_limits<samplew_t>::max();
                 energy_[i] = (e * 0xCCE + (int64_t)energy_[i] * 0x7332) >> 15;
             }
         }
@@ -277,8 +290,8 @@ private:
         const int power_;
 
         size_t offset = 0;
-        std::vector<int> complex;
-        std::vector<int> energy_;
+        std::vector<samplew_t> complex;
+        std::vector<samplew_t> energy_;
 
         std::vector<int> perm;
     };
@@ -399,7 +412,7 @@ private:
             auto v0 = delay_[ix0];
             auto v1 = delay_[ix1];
 
-            auto v = (((v0 * mx) >> 7) + ((v1 * (0x7F - mx)) >> 7)) << 14;
+            auto v = (((samplew_t(v0) * mx) >> 7) + ((samplew_t(v1) * (0x7F - mx)) >> 7)) << 14;
 
             auto q1 = bq1.filter(v);
             auto q2 = bq2.filter(q1);
