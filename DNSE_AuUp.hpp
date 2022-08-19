@@ -47,9 +47,16 @@ public:
 
                 e_slider = e_direction == e_direction_prev ? e_slider * 2 : e_slider / 2;
                 e_slider = std::max(1, std::min(e_slider, 0x10));
-
                 e_direction_prev = e_direction;
-                e_direction = e[e_point] > 0x863;
+
+                // energy values are approximately of same degree for 16 and 32bit samples
+
+                if constexpr (std::is_integral_v<sample_t>)
+                    e_direction = e[e_point] > 0x863;
+                else if constexpr (std::is_floating_point_v<sample_t>)
+                    // 0x863 / ccdffff = 0.000099
+                    // actual value might be up to 0.000005 probably
+                    e_direction = e[e_point] > 0.0000099;
 
                 e_point = e_direction ? e_point + e_slider : e_point - e_slider;
                 e_point = std::max(e_low, std::min(e_point, 0xFF));
@@ -113,10 +120,10 @@ private:
             }
         }
 
-        template<typename T = sample_t, std::enable_if_t<std::is_integral_v<T>, bool> = true>
         bool in(sample_t l, const sample_t r)
         {
-            complex[2 * offset] = ((samplew_t)l + r) >> 1;
+            //complex[2 * offset] = ((samplew_t)l + r) >> 1;
+            complex[2 * offset] = ((samplew_t)l + r) / 2;
             complex[2 * offset + 1] = 0;
 
             if (++offset < complex.size() / 2)
@@ -132,8 +139,16 @@ private:
             {
                 sample_t wnd = DNSE_AuUp_Params::fft_window[i / 2];
 
-                complex[i] = (complex[i] * wnd) >> 15;
-                complex[complex.size() - i - 2] = (complex[complex.size() - i - 2] * wnd) >> 15;
+                if constexpr (std::is_integral_v<sample_t>)
+                {
+                    complex[i] = (complex[i] * wnd) >> 15;
+                    complex[complex.size() - i - 2] = (complex[complex.size() - i - 2] * wnd) >> 15;
+                }
+                else if constexpr (std::is_floating_point_v<sample_t>)
+                {
+                    complex[i] = (complex[i] * wnd) / 0x8000;
+                    complex[complex.size() - i - 2] = (complex[complex.size() - i - 2] * wnd) / 0x8000;
+                }
             }
 
             for (size_t round = 0; round < power_; round++)
@@ -145,12 +160,6 @@ private:
             fft_energy();
 
             return true;
-        }
-
-        template<typename T = sample_t, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-        bool in(sample_t l, const sample_t r)
-        {
-            return false;
         }
 
         const std::vector<samplew_t> & energy()
@@ -193,8 +202,8 @@ private:
                             auto s3 = pc[3] + pcoff[3];
                             pc[2] = s2;
                             pc[3] = s3;
-                            auto c1 = ((d2 * (int64_t)ptw[0]) >> 15) - ((d3 * (int64_t)ptw[1]) >> 15);
-                            auto c2 = ((d2 * (int64_t)ptw[1]) >> 15) + ((d3 * (int64_t)ptw[0]) >> 15);
+                            auto c1 = ((d2 * (int64_t)ptw[0]) / 0x8000) - ((d3 * (int64_t)ptw[1]) / 0x8000);
+                            auto c2 = ((d2 * (int64_t)ptw[1]) / 0x8000) + ((d3 * (int64_t)ptw[0]) / 0x8000);
                             pcoff[2] = c1;
                             pcoff[3] = c2;
 
@@ -267,23 +276,33 @@ private:
             auto psz = 1 << power_;
             for (size_t i = 0; i < (psz >> 1); i++)
             {
-                int64_t e;
-                if constexpr (sizeof(sample_t) >= 4)
+                if constexpr (std::is_integral_v<sample_t>)
                 {
-                    // we sligtly dont fit x64 for squares of x32 type
-                    auto v1 = int64_t(complex[2 * i]) >> 16;
-                    auto v2 = int64_t(complex[2 * i + 1]) >> 16;
-                    e = v1 * v1 + v2 * v2;
-                }
-                else
-                {
-                    auto v1 = int64_t(complex[2 * i]);
-                    auto v2 = int64_t(complex[2 * i + 1]);
-                    e = v1 * v1 + v2 * v2;
-                }
+                    int64_t e;
+                    if constexpr (sizeof(sample_t) >= 4)
+                    {
+                        // we sligtly dont fit x64 for squares of x32 type
+                        auto v1 = int64_t(complex[2 * i]) >> 16;
+                        auto v2 = int64_t(complex[2 * i + 1]) >> 16;
+                        e = v1 * v1 + v2 * v2;
+                    }
+                    else
+                    {
+                        auto v1 = int64_t(complex[2 * i]);
+                        auto v2 = int64_t(complex[2 * i + 1]);
+                        e = v1 * v1 + v2 * v2;
+                        if (e >= std::numeric_limits<samplew_t>::max()) e = std::numeric_limits<samplew_t>::max();
+                    }
                     
-                if (e >= std::numeric_limits<samplew_t>::max()) e = std::numeric_limits<samplew_t>::max();
-                energy_[i] = (e * 0xCCE + (int64_t)energy_[i] * 0x7332) >> 15;
+                    energy_[i] = (e * 0xCCE + (int64_t)energy_[i] * 0x7332) >> 15;
+                }
+                else if constexpr (std::is_floating_point_v<sample_t>)
+                {
+                    auto v1 = complex[2 * i];
+                    auto v2 = complex[2 * i + 1];
+                    auto e = v1 * v1 + v2 * v2;
+                    energy_[i] = (e * 0.1 + energy_[i] * 0.9);
+                }
             }
         }
 
@@ -381,23 +400,16 @@ private:
         void setup(int ep, int samplerate)
         {
             auto epr = (samplerate >> 9) * ep;
-            level = (0x8A3 * epr - 0x10DE5C0) / 1000 + 0x2CCC;
-            level = std::max(0x2CCC, std::min(level, 0x71EC));
+            auto lv = (0x8A3 * epr - 0x10DE5C0) / 1000 + 0x2CCC;
+            if constexpr (std::is_integral_v<sample_t>)
+                level = std::max(0x2CCC, std::min(lv, 0x71EC));
+            else if constexpr (std::is_floating_point_v<sample_t>)
+                level = float(std::max(0x2CCC, std::min(lv, 0x71EC))) / 0x10000;
 
             bq1.setup(psrCoef(epr, 0x7FFFFFFF, samplerate));
             bq2.setup(psrCoef(epr, 0x2AAAAAAA, samplerate));
-
-            //dword_1C86C4 = 0x7FFFFFFF;
-            //unk_1C86C0 = 0x7FFFFFFF;
         }
 
-        template<typename T = sample_t, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
-        samplew_t filter(sample_t in)
-        {
-            return 0;
-        }
-
-        template<typename T = sample_t, std::enable_if_t<std::is_integral_v<T>, bool> = true>
         samplew_t filter(sample_t in)
         {
             delay_.push_back(in);
@@ -412,16 +424,16 @@ private:
             auto v0 = delay_[ix0];
             auto v1 = delay_[ix1];
 
-            auto v = (((samplew_t(v0) * mx) >> 7) + ((samplew_t(v1) * (0x7F - mx)) >> 7)) << 14;
+            auto v = (((samplew_t(v0) * mx) / 0x80) + ((samplew_t(v1) * (0x7F - mx)) / 0x80)) * 0x4000;
 
             auto q1 = bq1.filter(v);
             auto q2 = bq2.filter(q1);
 
-            return in + (smulw(q2, level) >> 13);
+            return in + (smulw(q2, level) / 0x2000);
         }
 
     private:
-        int level = 0;
+        intfloat_t level = 0;
         PsrBiquad bq1;
         PsrBiquad bq2;
 
