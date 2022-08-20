@@ -622,8 +622,14 @@ void Q2APOMFX::settingsMonitor()
 {
     try
     {
-        Handle hEvent(CreateEventW(NULL, FALSE, FALSE, NULL));
+        if (!Registry::keyExists(Settings::appPath))
+        {
+            Registry::createKey(Settings::appPath);
+        }
+
         auto hKey = Registry::openKey(Settings::appPath, KEY_NOTIFY | KEY_QUERY_VALUE | KEY_WOW64_64KEY);
+
+        Handle hEvent(CreateEventW(NULL, FALSE, FALSE, NULL));
         HANDLE waitObjs[] = { hEvent, stopSettingMonitorEvent_ };
 
         auto settingCache_ = Settings::currentEffect();

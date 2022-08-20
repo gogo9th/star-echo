@@ -8,9 +8,10 @@
 #include <CommCtrl.h>
 #include <combaseapi.h>
 
-// C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>
+
+#include <algorithm>
 #include <map>
 #include <memory.h>
 #include <functional>

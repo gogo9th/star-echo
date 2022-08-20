@@ -15,7 +15,14 @@ static const auto settingsValueName = L"Settings"sv;
 std::wstring currentEffect()
 {
     std::wstring value;
-    Registry::getValue(appPath, settingsValueName, value);
+    if (Registry::keyExists(appPath))
+    {
+        auto k = Registry::openKey(appPath);
+        if (Registry::valueExists(k, settingsValueName))
+        {
+            Registry::getValue(k, settingsValueName, value);
+        }
+    }
     return value;
 }
 
@@ -24,7 +31,7 @@ void setEffect(const std::wstring & value)
     Registry::setValue(appPath, settingsValueName, value);
 }
 
-bool Settings::isEffectEnabled(const std::wstring & str)
+bool Settings::isAnyEffectEnabled(const std::wstring & str)
 {
     return !str.empty() && str != L"disable";
 }

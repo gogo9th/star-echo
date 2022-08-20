@@ -7,7 +7,7 @@ namespace Settings
     std::wstring currentEffect();
     void setEffect(const std::wstring & value);
 
-    bool isEffectEnabled(const std::wstring &);
+    bool isAnyEffectEnabled(const std::wstring &);
     std::wstring effectDisabledString();
 
     bool isAutostart(std::wstring_view valueName, const std::wstring & value);

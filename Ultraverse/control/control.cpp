@@ -13,7 +13,7 @@
 #include <Shellapi.h>
 #include <control/mmDevices.h>
 
-//#include <Shlobj.h>
+#include "utils.h"
 
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
@@ -56,6 +56,7 @@ enum
 {
     NI_BEGIN = WM_USER + 10,
     NI_Studio,
+    NI_TOPITEM = NI_Studio,
     NI_Rock,
     NI_Classical,
     NI_Jazz,
@@ -68,14 +69,13 @@ enum
     NI_Concert,
     NI_Church,
     NI_Disable,
-    NI_Enable,
+    NI_BOTITEM = NI_Disable,
     NI_Setup,
     NI_Autostart,
-    NI_TOPITEM = NI_Studio,
-    NI_BOTITEM = NI_Disable,
+    NI_AuUp,
 };
 
-static const std::map<int, const wchar_t *> modes_ = {
+static const std::map<int, const wchar_t *> g_modes_ = {
     { NI_Studio,      L"studio" },
     { NI_Rock,        L"rock" },
     { NI_Classical,   L"classical" },
@@ -90,6 +90,7 @@ static const std::map<int, const wchar_t *> modes_ = {
     { NI_Church,      L"church" },
 };
 
+static const std::wstring auup_mode = { L"up" };
 
 
 static void startSetupInstalce()
@@ -224,6 +225,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         if (Registry::keyExists(Settings::appPath))
         {
+            InsertMenuW(hMenu, NI_AuUp, MF_BYCOMMAND, NI_AuUp, L"AudioUp");
+            InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
+
             InsertMenuW(hMenu, NI_Studio,   MF_BYCOMMAND, NI_Studio,    L"Studio");
             InsertMenuW(hMenu, NI_Rock,     MF_BYCOMMAND, NI_Rock,      L"Rock");
             InsertMenuW(hMenu, NI_Classical,MF_BYCOMMAND, NI_Classical, L"Classical");
@@ -241,27 +245,39 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Off");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
 
-            auto current = Settings::currentEffect();
-            if (!Settings::isEffectEnabled(current))
+            auto effect = Settings::currentEffect();
+            if (!Settings::isAnyEffectEnabled(effect))
             {
                 CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Disable, MF_BYCOMMAND);
             }
             else
             {
-                int currentMode = -1;
-                for (auto & [k,v] : modes_)
+                auto effects = stringSplit(effect, L";");
+                auto iAuup = std::find(effects.begin(), effects.end(), auup_mode);
+                if (iAuup != effects.end())
                 {
-                    if (current == v)
+                    effects.erase(iAuup);
+                    CheckMenuItem(hMenu, NI_AuUp, MF_BYCOMMAND | MF_CHECKED);
+                }
+                
+                int currentMode = -1;
+                if (!effects.empty())
+                {
+                    auto & e = effects[0];
+                    for (auto & [k,v] : g_modes_)
                     {
-                        currentMode = k;
-                        CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, k, MF_BYCOMMAND);
-                        break;
+                        if (e == v)
+                        {
+                            currentMode = k;
+                            CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, k, MF_BYCOMMAND);
+                            break;
+                        }
                     }
                 }
 
                 if (currentMode < 0)
                 {
-                    Settings::setEffect(std::wstring(modes_.at(NI_Church)));
+                    Settings::setEffect(std::wstring(g_modes_.at(NI_Church)));
                     CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Church, MF_BYCOMMAND);
                 }
             }
@@ -308,51 +324,98 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         MSG msg;
         while (GetMessage(&msg, nullptr, 0, 0))
         {
-            auto im = modes_.find(msg.message);
-            if (im != modes_.end())
+            if (msg.message == NI_AuUp)
             {
-                CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, im->first, MF_BYCOMMAND);
-                Settings::setEffect(im->second);
+                auto auupEnabled = GetMenuState(hMenu, NI_AuUp, MF_BYCOMMAND | MF_CHECKED) == MF_CHECKED;
+                auupEnabled = !auupEnabled;
+                CheckMenuItem(hMenu, NI_AuUp, MF_BYCOMMAND | (auupEnabled ? MF_CHECKED : MF_UNCHECKED));
+
+                auto effects = stringSplit(Settings::currentEffect(), L";");
+                auto iAuup = std::find(effects.begin(), effects.end(), auup_mode);
+                if (iAuup != effects.end() && !auupEnabled)
+                {
+                    effects.erase(iAuup);
+                    if (effects.empty())
+                    {
+                        Settings::setEffect(Settings::effectDisabledString());
+                    }
+                    else
+                    {
+                        Settings::setEffect(stringJoin(effects, L";"));
+                    }
+                }
+                else if (iAuup == effects.end() && auupEnabled)
+                {
+                    effects.insert(effects.begin(), auup_mode);
+                    auto iDisabled = std::find(effects.begin(), effects.end(), Settings::effectDisabledString());
+                    if (iDisabled != effects.end())
+                    {
+                        effects.erase(iDisabled);
+                    }
+                    Settings::setEffect(stringJoin(effects, L";"));
+                }
             }
             else
             {
-                switch (msg.message)
+                static const auto auupStr = [&hMenu] () -> std::wstring
                 {
-                    case NI_Disable:
-                        CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Disable, MF_BYCOMMAND);
-                        Settings::setEffect(Settings::effectDisabledString());
-                        break;
-
-                    case NI_Setup:
-                        if (isAdmin)
-                        {
-                            mw_->show();
-                        }
-                        else
-                        {
-                            startSetupInstalce();
-                        }
-                        break;
-
-                    case NI_Autostart:
+                    auto auupEnabled = GetMenuState(hMenu, NI_AuUp, MF_BYCOMMAND | MF_CHECKED) == MF_CHECKED;
+                    if (auupEnabled)
                     {
-                        auto current = GetMenuState(hMenu, NI_Autostart, MF_BYCOMMAND | MF_CHECKED);
-                        current = !current;
-                        if (current)
-                        {
-                            Settings::setAutostart(appNameW(), selfExeFilepath());
-                        }
-                        else
-                        {
-                            Settings::removeAutostart(appNameW());
-                        }
-                        CheckMenuItem(hMenu, NI_Autostart, MF_BYCOMMAND | (current ? MF_CHECKED : MF_UNCHECKED));
-                        break;
+                        return auup_mode + L';';
                     }
+                    return {};
+                };
 
-                    default:
-                        TranslateMessage(&msg);
-                        DispatchMessageW(&msg);
+                auto im = g_modes_.find(msg.message);
+                if (im != g_modes_.end())
+                {
+                    CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, im->first, MF_BYCOMMAND);
+
+                    auto effect = auupStr() + im->second;
+                    Settings::setEffect(effect);
+                }
+                else if (msg.message == NI_Disable)
+                {
+                    CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Disable, MF_BYCOMMAND);
+                    auto effect = auupStr();
+                    Settings::setEffect(effect.empty() ? Settings::effectDisabledString() : effect);
+                }
+                else
+                {
+                    switch (msg.message)
+                    {
+                        case NI_Setup:
+                            if (isAdmin)
+                            {
+                                mw_->show();
+                            }
+                            else
+                            {
+                                startSetupInstalce();
+                            }
+                            break;
+
+                        case NI_Autostart:
+                        {
+                            auto current = GetMenuState(hMenu, NI_Autostart, MF_BYCOMMAND | MF_CHECKED) == MF_CHECKED;
+                            current = !current;
+                            if (current)
+                            {
+                                Settings::setAutostart(appNameW(), selfExeFilepath());
+                            }
+                            else
+                            {
+                                Settings::removeAutostart(appNameW());
+                            }
+                            CheckMenuItem(hMenu, NI_Autostart, MF_BYCOMMAND | (current ? MF_CHECKED : MF_UNCHECKED));
+                            break;
+                        }
+
+                        default:
+                            TranslateMessage(&msg);
+                            DispatchMessageW(&msg);
+                    }
                 }
             }
         }

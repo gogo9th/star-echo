@@ -31,6 +31,30 @@ inline std::vector<std::basic_string<char_type>> stringSplit(const std::basic_st
     return stringSplit(str, std::basic_string_view<char_type>(delimiter, size - 1));
 }
 
+
+template<typename char_type>
+inline std::basic_string<char_type> stringJoin(const std::vector<std::basic_string<char_type>> & arr, std::basic_string_view<char_type> delimiter)
+{
+    std::basic_string<char_type> r;
+    auto sCount = arr.size();
+    for (auto s : arr)
+    {
+        r += s;
+        if (--sCount > 0)
+        {
+            r += delimiter;
+        }
+    }
+    return r;
+}
+
+template<typename char_type, size_t size>
+inline std::basic_string<char_type> stringJoin(const std::vector<std::basic_string<char_type>> & arr, const char_type(&delimiter)[size])
+{
+    return stringJoin(arr, std::basic_string_view<char_type>(delimiter, size - 1));
+}
+
+
 inline std::wstring stringToWstring(const std::string & s)
 {
     return std::wstring(s.begin(), s.end());
