@@ -138,8 +138,7 @@ Predefined filters:\n\
  livecafe,\n\
  concert,\n\
  church,\n\
- upscaling\n\
-")
+ upscaling")
 ;
     po::positional_options_description posd;
     posd.add("input", -1);
