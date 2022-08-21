@@ -225,9 +225,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         if (Registry::keyExists(Settings::appPath))
         {
-            InsertMenuW(hMenu, NI_AuUp, MF_BYCOMMAND, NI_AuUp, L"AudioUp");
-            InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
-
             InsertMenuW(hMenu, NI_Studio,   MF_BYCOMMAND, NI_Studio,    L"Studio");
             InsertMenuW(hMenu, NI_Rock,     MF_BYCOMMAND, NI_Rock,      L"Rock");
             InsertMenuW(hMenu, NI_Classical,MF_BYCOMMAND, NI_Classical, L"Classical");
@@ -240,9 +237,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe,  L"Live Cafe");
             InsertMenuW(hMenu, NI_Concert,  MF_BYCOMMAND, NI_Concert,   L"Concert");
             InsertMenuW(hMenu, NI_Church,   MF_BYCOMMAND, NI_Church,    L"Church");
-
-            InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
             InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Off");
+            InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
+
+            InsertMenuW(hMenu, NI_AuUp, MF_BYCOMMAND, NI_AuUp, L"Audio Upscaling");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
 
             auto effect = Settings::currentEffect();
