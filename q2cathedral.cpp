@@ -138,7 +138,7 @@ Predefined filters:\n\
  livecafe,\n\
  concert,\n\
  church,\n\
- up\n\
+ upscaling\n\
 ")
 ;
     po::positional_options_description posd;
@@ -217,7 +217,8 @@ Predefined filters:\n\
         }
         else if (std::filesystem::is_regular_file(inputPath))
         {
-            auto outputFile = outputFilePath(inputPath, std::filesystem::absolute(output));
+				std::filesystem::path p = "";
+            auto outputFile = outputFilePath(inputPath, (output.empty() ? p : std::filesystem::absolute(output)));
             if (!outputFile.empty())
             {
                 if (!keepFormat)

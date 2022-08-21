@@ -1,5 +1,6 @@
 #pragma once
 
+#include "filter.h"
 #include "DNSE_AuUp_params.h"
 
 
@@ -16,7 +17,7 @@ public:
 
 
     DNSE_AuUp(int v1, int v2)
-        : Filter({ 44100, })
+        : Filter<sampleType, wideSampleType>({ 44100 })
     {}
 
     void setSamplerate(int sampleRate) override

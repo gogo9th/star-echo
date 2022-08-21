@@ -88,7 +88,7 @@ Options:
                          livecafe,
                          concert,
                          church,
-                         up
+                         upscaling
 ```
 
 

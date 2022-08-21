@@ -90,7 +90,7 @@ static const std::map<int, const wchar_t *> g_modes_ = {
     { NI_Church,      L"church" },
 };
 
-static const std::wstring auup_mode = { L"up" };
+static const std::wstring auup_mode = { L"upscaling" };
 
 
 static void startSetupInstalce()

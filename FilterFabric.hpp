@@ -164,7 +164,7 @@ private:
                 auto intParams = getIntParams<int, 2>(params);
                 filters.push_back(std::make_unique<DNSE_BE<sampleType, wideSampleType>>(intParams[0], intParams[1]));
             }
-            else if (boost::iequals(filterName, "up"))
+            else if (boost::iequals(filterName, "upscaling"))
             {
                 filters.push_back(std::make_unique<DNSE_AuUp<sampleType, wideSampleType>>(5, 0));
             }
