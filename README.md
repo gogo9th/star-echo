@@ -87,7 +87,8 @@ Options:
                          cafe,
                          livecafe,
                          concert,
-                         church
+                         church,
+                         up
 ```
 
 
