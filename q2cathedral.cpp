@@ -137,7 +137,8 @@ Predefined filters:\n\
  cafe,\n\
  livecafe,\n\
  concert,\n\
- church\n\
+ church,\n\
+ up\n\
 ")
 ;
     po::positional_options_description posd;
