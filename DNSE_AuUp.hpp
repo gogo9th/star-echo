@@ -16,8 +16,10 @@ public:
     using int16float_t = typename Filter<sampleType, wideSampleType>::int16float_t;
 
 
-    DNSE_AuUp(int v1, int v2)
-        : Filter<sampleType, wideSampleType>({ 44100 })
+    DNSE_AuUp(int v1, int v2, int uLevel)
+        : Filter<sampleType, wideSampleType>({ 8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000 }),
+        psrL_(uLevel),
+        psrR_(uLevel)
     {}
 
     void setSamplerate(int sampleRate) override
@@ -398,6 +400,10 @@ private:
         }
 
     public:
+        Psr(int uLevel)
+            : uLevel_(uLevel)
+        {}
+
         void setup(int ep, int samplerate)
         {
             auto epr = (samplerate >> 9) * ep;
@@ -430,11 +436,13 @@ private:
             auto q1 = bq1.filter(v);
             auto q2 = bq2.filter(q1);
 
-            return in + (smulw(q2, level) / 0x2000);
+            return in + (smulw(q2, level) / 0x2000) * uLevel_ / 10;
         }
 
     private:
         intfloat_t level = 0;
+        const int uLevel_;
+
         PsrBiquad bq1;
         PsrBiquad bq2;
 
@@ -444,6 +452,7 @@ private:
 
 
     int samplerate_ = 0;
+
     FFT fft;
     int fftToSkip = 0;
 

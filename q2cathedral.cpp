@@ -216,7 +216,7 @@ Predefined filters:\n\
         }
         else if (std::filesystem::is_regular_file(inputPath))
         {
-				std::filesystem::path p = "";
+            std::filesystem::path p = "";
             auto outputFile = outputFilePath(inputPath, (output.empty() ? p : std::filesystem::absolute(output)));
             if (!outputFile.empty())
             {

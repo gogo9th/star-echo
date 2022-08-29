@@ -166,7 +166,8 @@ private:
             }
             else if (boost::iequals(filterName, "upscaling"))
             {
-                filters.push_back(std::make_unique<DNSE_AuUp<sampleType, wideSampleType>>(5, 0));
+                int level = params.size() > 0 ? std::stoi(params[0]) : 10;
+                filters.push_back(std::make_unique<DNSE_AuUp<sampleType, wideSampleType>>(5, 0, level));
             }
             else
             {

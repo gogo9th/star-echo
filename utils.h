@@ -59,6 +59,7 @@ inline std::wstring stringToWstring(const std::string & s)
 {
     return std::wstring(s.begin(), s.end());
 }
+
 inline std::string wstringToString(const std::wstring & s)
 {
     std::string r;
