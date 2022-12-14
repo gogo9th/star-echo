@@ -20,9 +20,15 @@ public:
 
     void create();
 
-    void show(bool visible = true)
+    void show()
     {
-        ShowWindow(hWnd_, visible ? SW_SHOW : SW_HIDE);
+        ShowWindow(hWnd_, SW_SHOW);
+        SetForegroundWindow(hWnd_);
+    }
+
+    void hide()
+    {
+        ShowWindow(hWnd_, SW_HIDE);
     }
 
 private:

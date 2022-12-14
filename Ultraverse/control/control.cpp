@@ -237,7 +237,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe,  L"Live Cafe");
             InsertMenuW(hMenu, NI_Concert,  MF_BYCOMMAND, NI_Concert,   L"Concert");
             InsertMenuW(hMenu, NI_Church,   MF_BYCOMMAND, NI_Church,    L"Church");
-            InsertMenuW(hMenu, NI_Disable, MF_BYCOMMAND, NI_Disable, L"Off");
+            InsertMenuW(hMenu, NI_Disable,  MF_BYCOMMAND, NI_Disable,   L"Off");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
 
             InsertMenuW(hMenu, NI_AuUp, MF_BYCOMMAND, NI_AuUp, L"Audio Upscaling");
@@ -467,24 +467,70 @@ bool isUserInAdminGroup()
     return r;
 }
 
-int restartAudioService()
+static bool switchServiceOff(std::shared_ptr<SCM::Service> &service, int state)
+{
+    return (state != SERVICE_RUNNING
+        || (service->stop() && service->status().state == SERVICE_STOPPED));
+}
+
+static bool switchServiceOn(std::shared_ptr<SCM::Service> &service, int state)
+{
+    return (state == SERVICE_RUNNING
+        || (service->start() && service->status().state == SERVICE_RUNNING));
+}
+
+bool restartAudioService()
 {
     auto scm = std::make_shared<SCM>();
+
     auto service = scm->service(L"audiosrv");
-    auto status = service->status();
-    if (status.state == SERVICE_RUNNING)
+
+    auto deps = service->dependencies();
+    std::vector<SCM::Service::Status> depStates;
+    for (auto & dep : deps)
     {
-        if (!service->stop()
-            || service->status().state != SERVICE_STOPPED)
-        {
-            return -1;
-        }
-    }
-    if (!service->start()
-        || service->status().state != SERVICE_RUNNING)
-    {
-        return -1;
+        depStates.push_back(dep->status());
     }
 
-    return 0;
+    // will stop if was running
+    if (service->status().state == SERVICE_RUNNING)
+    {
+        // deps first
+        try
+        {
+            for (size_t i = 0; i < deps.size(); i++)
+            {
+                if (!switchServiceOff(deps[i], depStates[i].state)) return false;
+            }
+        }
+        catch (const WError & e)
+        {
+            throw WError(L"Error while stopping dependent services: " + e.what());
+        }
+
+        if (!switchServiceOff(service, service->status().state)) return false;
+    }
+
+    // then start
+
+    if (!switchServiceOn(service, service->status().state)) return false;
+
+    // and then deps 
+    try
+    {
+        for (size_t i = 0; i < deps.size(); i++)
+        {
+            if (depStates[i].state == SERVICE_RUNNING)
+            {
+                if (!switchServiceOn(deps[i], deps[i]->status().state)) return false;
+            }
+        }
+    }
+    catch (const WError & )
+    {
+        // return false as partial error but start service anyway
+        return false;
+    }
+
+    return true;
 }

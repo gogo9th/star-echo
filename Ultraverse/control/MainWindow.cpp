@@ -161,7 +161,9 @@ void MainWindow::onButtonClicked(int id)
                                          appNameW(), MB_ICONQUESTION | MB_YESNO);
                     if (r == IDYES)
                     {
-                        restartAudioService();
+                        if (!restartAudioService())
+                            MessageBoxW(hWnd_, L"Restarting the service is not gone as planned,\n which may lead to audio playback issues.",
+                                appNameW(), MB_ICONWARNING | MB_OK);
                     }
                 }
             }

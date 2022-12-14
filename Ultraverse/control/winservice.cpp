@@ -33,7 +33,7 @@ std::shared_ptr<SCM::Service> SCM::service(const wchar_t * name)
 SCM::Service::Service(std::shared_ptr<SCM> && cm, const wchar_t * name)
     : cm_(cm)
 {
-    service_ = OpenServiceW(cm_->scm_, name, SERVICE_QUERY_STATUS | SERVICE_INTERROGATE | SERVICE_START | SERVICE_STOP);
+    service_ = OpenServiceW(cm_->scm_, name, SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS | SERVICE_INTERROGATE | SERVICE_START | SERVICE_STOP);
     if (service_ == 0)
         throw WError::gle(L"Failed to open service");
 }
@@ -43,11 +43,11 @@ SCM::Service::~Service()
     CloseServiceHandle(service_);
 }
 
-struct SCM::Service::status SCM::Service::status() const
+struct SCM::Service::Status SCM::Service::status() const
 {
     DWORD bn;
     SERVICE_STATUS_PROCESS ssStatus;
-    if (QueryServiceStatusEx(service_, SC_STATUS_PROCESS_INFO, (BYTE*)&ssStatus, sizeof(ssStatus), &bn) == 0)
+    if (QueryServiceStatusEx(service_, SC_STATUS_PROCESS_INFO, (BYTE *)&ssStatus, sizeof(ssStatus), &bn) == 0)
         throw WError::gle(L"Failed to query service");
 
     return { ssStatus.dwCurrentState, ssStatus.dwProcessId };
@@ -61,6 +61,29 @@ bool SCM::Service::start(unsigned timeout)
 bool SCM::Service::stop(unsigned timeout)
 {
     return operation(Operation::Stop, timeout);
+}
+
+std::vector<std::shared_ptr<SCM::Service>> SCM::Service::dependencies()
+{
+    DWORD bNeeded = 0, nServices = 0;
+    std::unique_ptr<byte> d;
+
+    while (!EnumDependentServicesW(service_, SERVICE_STATE_ALL, (ENUM_SERVICE_STATUSW *)d.get(), bNeeded, &bNeeded, &nServices))
+    {
+        auto e = GetLastError();
+        if (e == ERROR_MORE_DATA)
+            d.reset(new byte[bNeeded]);
+        else if (e != ERROR_SUCCESS)
+            throw WError::gle(L"Failed to get dependent services");
+    }
+
+    std::vector<std::shared_ptr<SCM::Service>> r;
+    for (DWORD i = 0; i < nServices; i++)
+    {
+        auto & ss = *((ENUM_SERVICE_STATUSW *)d.get() + i);
+        r.push_back(cm_->service(ss.lpServiceName));
+    }
+    return r;
 }
 
 bool SCM::Service::operation(Operation operation, unsigned timeout)
@@ -93,7 +116,7 @@ bool SCM::Service::operation(Operation operation, unsigned timeout)
             case SERVICE_PAUSED:
                 if (operation == Operation::Start)
                 {
-                    if(!StartServiceW(service_, 0, 0))
+                    if (!StartServiceW(service_, 0, 0))
                         throw WError::gle(L"Failed to start service");
                 }
                 else if (operation == Operation::Stop)

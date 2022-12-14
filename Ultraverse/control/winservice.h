@@ -15,7 +15,8 @@ public:
     public:
         ~Service();
 
-        struct status { unsigned state; unsigned pid; } status() const;
+        struct Status { unsigned state; unsigned pid; } status() const;
+
         bool start(unsigned timeout = 10 /*seconds*/);
         bool stop(unsigned timeout = 10 /*seconds*/);
 
@@ -24,12 +25,15 @@ public:
             return error_;
         }
 
+        std::vector<std::shared_ptr<Service>> dependencies();
+
     private:
         enum class Operation
         {
             Start,
             Stop,
         };
+        
         bool operation(Operation operation, unsigned timeout);
 
         friend class SCM;

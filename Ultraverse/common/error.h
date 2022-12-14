@@ -13,9 +13,9 @@ public:
         return message_;
     }
 
-    static WError gle(const wchar_t * msg)
+    static WError gle(const std::wstring & msg)
     {
-        return WError(std::wstring(msg) + L" (" + std::to_wstring(GetLastError()) + L")");
+        return WError(msg + L" (" + std::to_wstring(GetLastError()) + L")");
     }
 
 private:

@@ -3,4 +3,4 @@
 #include "resource.h"
 
 bool isUserInAdminGroup();
-int restartAudioService();
+bool restartAudioService();
