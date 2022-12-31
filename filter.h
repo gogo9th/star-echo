@@ -105,7 +105,7 @@ public:
     {
         if (normalizer != 1.0f)
         {
-            if (std::is_floating_point_v<sample_t>)
+            if constexpr (std::is_floating_point_v<sample_t>)
             {
                 l /= normalizer;
                 r /= normalizer;

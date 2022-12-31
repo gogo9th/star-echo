@@ -8,7 +8,7 @@
 
 
 template<typename sampleType, typename wideSampleType>
-class DNSE_BE: public Filter<sampleType, wideSampleType>
+class DNSE_BE : public Filter<sampleType, wideSampleType>
 {
     using Filter<sampleType, wideSampleType>::smulw;
     using Filter<sampleType, wideSampleType>::normalize;
@@ -68,8 +68,8 @@ public:
                 {
                     if constexpr (std::is_same_v<sample_t, float>)
                     {
-                        KBass_B1_poly_param[i] = 1 << (1 + int(B1_poly_param[i]));
-                        KBass_B2_poly_param[i] = 1 << (1 + int(B2_poly_param[i]));
+                        KBass_B1_poly_param[i] = sample_t(1 << (1 + int(B1_poly_param[i])));
+                        KBass_B2_poly_param[i] = sample_t(1 << (1 + int(B2_poly_param[i])));
                     }
                     else
                     {
@@ -151,8 +151,8 @@ public:
     void filter(sample_t l, const sample_t r,
                 sample_t * l_out, sample_t * r_out) override
     {
-        auto l1 = KBass_Hpf_L.filter(l);
-        auto r1 = KBass_Hpf_R.filter(r);
+        samplew_t l1 = KBass_Hpf_L.filter(l);
+        samplew_t r1 = KBass_Hpf_R.filter(r);
 
         sample_t b1, b2;
         if (KBass_Downrate_)
@@ -160,7 +160,7 @@ public:
             // downRate
             //sample_t sum = (r >> 1) + (l >> 1);
             sample_t sum = (r / 2) + (l / 2);
-            b1 = b2 = KBass_AntiDown.filter(sum);
+            b1 = b2 = sample_t(KBass_AntiDown.filter(sum));
         }
         else
         {
@@ -171,14 +171,14 @@ public:
         sample_t out;
         if (!KBass_Downrate_ || (KBass_pt_++ & 3) == 0)
         {
-            b1 = KBass_B1_Bpf2.filter(KBass_B1_Bpf1.filter(b1));
-            b2 = KBass_B2_Bpf2.filter(KBass_B2_Bpf1.filter(b2));
+            b1 = sample_t(KBass_B1_Bpf2.filter(sample_t(KBass_B1_Bpf1.filter(b1))));
+            b2 = sample_t(KBass_B2_Bpf2.filter(sample_t(KBass_B2_Bpf1.filter(b2))));
 
             b1 = power_poly(b1, KBass_B1_poly_coef, KBass_B1_poly_param);
             b2 = power_poly(b2, KBass_B2_poly_coef, KBass_B2_poly_param);
 
-            b1 = KBass_B1_Lpf2.filter(KBass_B1_Lpf1.filter(b1));
-            b2 = KBass_B2_Lpf2.filter(KBass_B2_Lpf1.filter(b2));
+            b1 = sample_t(KBass_B1_Lpf2.filter(sample_t(KBass_B1_Lpf1.filter(b1))));
+            b2 = sample_t(KBass_B2_Lpf2.filter(sample_t(KBass_B2_Lpf1.filter(b2))));
 
             out = b1 + b2;
         }
@@ -189,7 +189,7 @@ public:
 
         if (KBass_Downrate_)
         {
-            out = 8 * KBass_AntiUpSub.filter(KBass_AntiUp.filter(out));
+            out = sample_t(8 * KBass_AntiUpSub.filter(sample_t(KBass_AntiUp.filter(out))));
         }
         else
         {
@@ -203,8 +203,8 @@ public:
 
         normalize(lOut, rOut);
 
-        *l_out = lOut;
-        *r_out = rOut;
+        *l_out = sample_t(lOut);
+        *r_out = sample_t(rOut);
     }
 
 private:
@@ -255,7 +255,7 @@ private:
             auto v10 = smulw(coeff[0], in) + coeff[1];
             auto v11 = smulw(v10, in) + coeff[2];
             auto r = (smulw(v11, in) + coeff[3]) * *pv;
-            return r;
+            return sample_t(r);
         }
     }
 
@@ -304,8 +304,8 @@ private:
 
     int KBass_Downrate_ = 0;
     int KBass_pt_ = 0;
-    samplew_t KBass_B1_poly_coef[24] {};
-    samplew_t KBass_B2_poly_coef[24] {0};
-    sample_t KBass_B1_poly_param[6] {0};
-    sample_t KBass_B2_poly_param[6] {0};
+    samplew_t KBass_B1_poly_coef[24] { 0 };
+    samplew_t KBass_B2_poly_coef[24] { 0 };
+    sample_t KBass_B1_poly_param[6] { 0 };
+    sample_t KBass_B2_poly_param[6] { 0 };
 };

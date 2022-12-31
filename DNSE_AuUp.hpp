@@ -64,7 +64,7 @@ public:
                 e_point = e_direction ? e_point + e_slider : e_point - e_slider;
                 e_point = std::max(e_low, std::min(e_point, 0xFF));
 
-                auto epd_next = (0x3334LL * (e_point << 15) + 0x4CCCLL * e_point_d) >> 15;
+                int epd_next = (0x3334LL * (e_point << 15) + 0x4CCCLL * e_point_d) >> 15;
                 e_point_new = epd_next >> 15;
                 e_point_d = epd_next;
             }
@@ -91,8 +91,8 @@ public:
 
         normalize(pl, pr);
 
-        *l_out = pl;
-        *r_out = pr;
+        *l_out = sample_t(pl);
+        *r_out = sample_t(pr);
     }
 
 private:
@@ -154,7 +154,7 @@ private:
                 }
             }
 
-            for (size_t round = 0; round < power_; round++)
+            for (int round = 0; round < power_; round++)
             {
                 fft_dfreq_frwd(round);
             }
@@ -182,7 +182,7 @@ private:
                 auto pc = complex.data();
                 auto coff = 2 * (psz >> (round + 1));
                 auto pcoff = complex.data() + coff;
-                for (size_t iOuter = 0; iOuter < (1 << round); iOuter++)
+                for (int iOuter = 0; iOuter < (1 << round); iOuter++)
                 {
                     auto d0 = pc[0] - pcoff[0];
                     auto d1 = pc[1] - pcoff[1];
@@ -205,11 +205,9 @@ private:
                             auto s3 = pc[3] + pcoff[3];
                             pc[2] = s2;
                             pc[3] = s3;
-                            auto c1 = ((d2 * (int64_t)ptw[0]) / 0x8000) - ((d3 * (int64_t)ptw[1]) / 0x8000);
-                            auto c2 = ((d2 * (int64_t)ptw[1]) / 0x8000) + ((d3 * (int64_t)ptw[0]) / 0x8000);
-                            pcoff[2] = c1;
-                            pcoff[3] = c2;
-
+                            pcoff[2] = ((d2 * (int64_t)ptw[0]) / 0x8000) - ((d3 * (int64_t)ptw[1]) / 0x8000);
+                            pcoff[3] = ((d2 * (int64_t)ptw[1]) / 0x8000) + ((d3 * (int64_t)ptw[0]) / 0x8000);
+                            
                             pcoff += 2;
                             pc += 2;
                             ptw += 2 * blocksz;
@@ -297,7 +295,7 @@ private:
                         if (e >= std::numeric_limits<samplew_t>::max()) e = std::numeric_limits<samplew_t>::max();
                     }
                     
-                    energy_[i] = (e * 0xCCE + (int64_t)energy_[i] * 0x7332) >> 15;
+                    energy_[i] = samplew_t((e * 0xCCE + (int64_t)energy_[i] * 0x7332) >> 15);
                 }
                 else if constexpr (std::is_floating_point_v<sample_t>)
                 {
@@ -446,7 +444,7 @@ private:
         PsrBiquad bq1;
         PsrBiquad bq2;
 
-        boost::circular_buffer<sample_t>   delay_ { 256, 0 };
+        boost::circular_buffer<sample_t>   delay_ { 256, sample_t(0) };
         int ix = 0;
     };
 

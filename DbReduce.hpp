@@ -28,6 +28,8 @@ public:
         {
             gain_ = dbReduceCoeff[db] / float(0x4000);
         }
+        else
+            static_assert(0, "Incorrect sample type");
     }
 
     void setSamplerate(int sampleRate) override
@@ -36,10 +38,10 @@ public:
     void filter(sample_t l, const sample_t r,
                 sample_t * l_out, sample_t * r_out) override
     {
-        *l_out = smulw(l, gain_);
-        *r_out = smulw(r, gain_);
+        *l_out = sample_t(smulw(l, gain_));
+        *r_out = sample_t(smulw(r, gain_));
     }
 
 private:
-    intfloat_t gain_;
+    intfloat_t gain_ = 0;
 };

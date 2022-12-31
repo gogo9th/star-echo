@@ -125,8 +125,8 @@ public:
 
         normalize(lbRev, rbRev);
 
-        *l_out = lbRev;
-        *r_out = rbRev;
+        *l_out = sample_t(lbRev);
+        *r_out = sample_t(rbRev);
     }
 
 private:

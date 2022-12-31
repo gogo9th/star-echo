@@ -117,7 +117,7 @@ public:
                         sample_t * l_out, sample_t * r_out) override
     {
         //samplew_t sum = (samplew_t(l) + r) >> 2;
-        samplew_t sum = (samplew_t(l) + r) / 4;
+        auto sum = sample_t((samplew_t(l) + r) / 4);
 
         auto tone = toneFilter_.filter(sum);
         auto [ls, rs] = dsFilter_.filter(tone);
@@ -139,8 +139,8 @@ public:
 
         normalize(r1, r2);
 
-        *l_out = r1;
-        *r_out = r2;
+        *l_out = sample_t(r1);
+        *r_out = sample_t(r2);
     }
 
 private:
@@ -177,22 +177,22 @@ private:
             auto v1 = delay_[1] * gains_[2] + delay_[0] * gains_[3] + ((int64_t /* not w!*/)v_tone << 12);
             auto v2 = delay_[1] * gains_[0] + delay_[0] * gains_[1];
 
-            delay_.push_back(v1 >> 12);
+            delay_.push_back(samplew_t(v1 >> 12));
 
-            return ((((/*64bit mul for 16bit sample_t*/v1 * d1c785c_ >> 12) + v2) >> 12) * total_gain_) >> 12;
+            return sample_t(((((/*64bit mul for 16bit sample_t*/v1 * d1c785c_ >> 12) + v2) >> 12) * total_gain_) >> 12);
         }
 
         template<typename T = sample_t, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
         sample_t filter(sample_t in)
         {
-            v_tone += samplew_t(in - v_tone) * tone_;
+            v_tone = sample_t(v_tone + samplew_t(in - v_tone) * tone_);
 
             auto v1 = delay_[1] * gains_[2] + delay_[0] * gains_[3] + v_tone;
             auto v2 = delay_[1] * gains_[0] + delay_[0] * gains_[1];
 
             delay_.push_back(v1);
 
-            return (v1 * d1c785c_ + v2) * total_gain_;
+            return sample_t((v1 * d1c785c_ + v2) * total_gain_);
         }
 
     private:
@@ -267,7 +267,10 @@ private:
         APFilter(int delay, int gain)
             : DelayFilter(delay)
         {
-            gain_ = std::is_integral_v<sample_t> ? gain : gain / float(0x1000);
+            if constexpr (std::is_integral_v<sample_t>)
+                gain_ = gain;
+            else
+                gain_ = gain / float(0x1000);
         }
 
         template<typename T = sample_t, std::enable_if_t<std::is_integral_v<T>, bool> = true>
@@ -326,7 +329,10 @@ private:
             , vbr_delay_(delay)
             , ggain_(ggain)
         {
-            gain_ = std::is_integral_v<sample_t> ? gain : gain / float(0x1000);
+            if constexpr (std::is_integral_v<sample_t>)
+                gain_ = gain;
+            else
+                gain_ = gain / float(0x1000);
         }
 
         samplew_t filter(samplew_t in)
@@ -432,7 +438,7 @@ private:
         samplew_t flow_ = 0;
         intfloat_t gain_ = 0;
         intfloat_t absorb_ = 0;
-        int32_t out_shift_ = 0;
+        size_t out_shift_ = 0;
     };
 
 

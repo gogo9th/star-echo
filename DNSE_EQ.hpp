@@ -83,8 +83,8 @@ public:
 
         normalize(lb, rb);
 
-        *l_out = lb;
-        *r_out = rb;
+        *l_out = sample_t(lb);
+        *r_out = sample_t(rb);
     }
 
 private:
