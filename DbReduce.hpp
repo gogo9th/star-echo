@@ -20,6 +20,8 @@ public:
                                              0x143D, 0x120A, 0x1013, 0xE54, 0xCC5, 0xB62, 0xA25, 0x90A, 0x80F, 0x72E };
 
         db = std::max(0, std::min((int)std::size(dbReduceCoeff) - 1, db));
+
+        static_assert(std::is_integral_v<sampleType> || std::is_floating_point_v<sampleType>, "Incorrect sample type");
         if constexpr (std::is_integral_v<sampleType>)
         {
             gain_ = 4 * dbReduceCoeff[db];
@@ -28,8 +30,6 @@ public:
         {
             gain_ = dbReduceCoeff[db] / float(0x4000);
         }
-        else
-            static_assert(0, "Incorrect sample type");
     }
 
     void setSamplerate(int sampleRate) override
