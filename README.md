@@ -166,6 +166,8 @@ Options:
 ```console
     $ cd yp-q2-cathedral/Ultraverse
     $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\Ultraverse.sln
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\Ultraverse.sln /p:Configuration="Release"
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\Ultraverse.sln /p:Configuration="Debug"
 ```
 
 <b><u>Step 4.</u></b> The installer is created at `yp-q2-cathedral-main\yp-q2-cathedral-main\Ultraverse\Setup\bin\x64\Debug\Setup.msi`.
