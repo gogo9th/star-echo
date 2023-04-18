@@ -10,7 +10,8 @@ q2cathedral
 cscope.*
 tags
 .vs
-
+web-server/node_modules/
+web-server/public/
 
 *.user
 /Ultraverse/Setup/bin

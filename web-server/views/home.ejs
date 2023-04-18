@@ -1,0 +1,63 @@
+ <!DOCTYPE html lang="en">
+ <head>
+		<title>Music Converter</title>
+		<h1>Music Converter</h1>
+      <h1>(+ Cathedral & LiveCafe Effects)</h1>
+		<h5> 1. Upload your music file (.mp3, .flac, .wav, or .wma). </h5>
+		<h5> 2. Download the converted music (with the Cathedral and Live Cafe effects). </h5>
+ </head>
+ <body>
+		<script>
+			var remember;
+         function wait0(x)
+         {  remember = x.parentElement.parentElement;
+         }
+         function wait(x)
+         {  //x.style.display = 'none';
+            //x.style.disabled = true;
+				remember.style.display = 'none';
+				remember.style.disabled = true;
+            document.getElementById("thetext").innerHTML = "Uploading and processing (takes 30 seconds)...";
+         }
+		</script>
+      <div  id='div1'>
+        <form action="/" method="POST" enctype="multipart/form-data" id='form1'>
+          <input type="file" name="pic" id="pic1" onclick='wait0(this)' ><br>
+          <input type="submit" value='Upload' onclick='wait(this)' id='sub1'>
+        </form>
+        <!-- <form action="/?filter=livecafe" method="POST" enctype="multipart/form-data" id='form2'>
+          <input type="file" name="pic" id="pic2" onclick='wait0(this)' ><br>
+          <input type="submit" value='Add the "Live Cafe" Effect' onclick='wait(this)' id='sub2'>
+        </form> -->
+      </div>
+	<div id='thetext'></div>
+	<br><br><br><br>
+    <% if(data.length > 0) {%>
+	<h3> Converted Musics </h3>
+      <table>
+           <thead>
+               <tr>
+                   <td height="50">
+                   </td>
+                   <td height="50">
+                   </td>
+               </tr>
+           </thead>
+           <tbody>
+               <% for(var i=0; i< data.length; i++) {%>
+               <tr>
+                <td height="30">
+                <form action="/download/<%= data[i]._id%>">
+                 <input type="submit" value="Download">
+                </form>
+                   </td>
+                   <td height="30">
+							<p><%= data[i].picpath.substring('uploads/'.length) %></p>
+                   </td>
+               </tr>
+               <% } %>
+           </tbody>
+      </table>
+      <% } %>  
+ </body>
+ </html>
