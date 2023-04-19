@@ -72,7 +72,7 @@ static scoped_ptr<AVCodecContext> createCodec(AVCodecParameters * codecpar,
 
     int r;
 
-    AVCodec * codec = output ? avcodec_find_encoder(codecpar->codec_id) : avcodec_find_decoder(codecpar->codec_id);
+    const AVCodec * codec = output ? avcodec_find_encoder(codecpar->codec_id) : avcodec_find_decoder(codecpar->codec_id);
     if (!codec) throw MPError("failed to find codec");
 
     scoped_ptr<AVCodecContext> ctx(avcodec_alloc_context3(codec),
