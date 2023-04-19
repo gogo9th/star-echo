@@ -157,7 +157,7 @@ Options:
 
 ## "Ultraverse" Dynamic Audio Engine Installation (Windows)
 
-<b><u>Step 1.</u></b> Go and install the [Wix toolset V3 or higher (both .exe and Visual Studio Extension](https://wixtoolset.org/releases/).
+<b><u>Step 1.</u></b> Go and install the [Wix toolset V3 or higher](https://wixtoolset.org/releases/) (both `wix*.exe` and Visual Studio Extension, separately).
 
 <b><u>Step 2.</u></b> Go and install [Visual Studio C++ Development](https://visualstudio.microsoft.com/ko/downloads/).
 
@@ -172,4 +172,4 @@ Options:
     $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\Ultraverse.sln /p:Configuration="Debug"
 ```
 
-<b><u>Step 5.</u></b> The installer is created at `yp-q2-cathedral-main\yp-q2-cathedral-main\Ultraverse\Setup\bin\x64\Debug\Setup.msi`.
+<b><u>Step 5.</u></b> The installer is created at `yp-q2-cathedral-main\yp-q2-cathedral-main\Ultraverse\Setup\bin\x64\Debug\Setup.msi` and `yp-q2-cathedral-main\yp-q2-cathedral-main\Ultraverse\Setup\bin\x64\Release\Setup.msi`.
