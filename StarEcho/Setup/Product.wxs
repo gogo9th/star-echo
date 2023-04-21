@@ -41,7 +41,7 @@
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
 
-    <util:CloseApplication CloseMessage="yes" Target="econtrol.exe" Description="Please close [ProductName] before continuing." RebootPrompt="no"/>
+    <util:CloseApplication CloseMessage="yes" Target="scontrol.exe" Description="Please close [ProductName] before continuing." RebootPrompt="no"/>
 
   </Product>
 
