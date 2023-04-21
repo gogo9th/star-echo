@@ -155,7 +155,7 @@ Options:
 
 
 
-## "Ultraverse" Dynamic Audio Engine Installation (Windows)
+## "StarEcho" Dynamic Audio Engine Installation (Windows)
 
 <b><u>Step 1.</u></b> Go and install the [Wix toolset V3 or higher](https://wixtoolset.org/releases/) (both `wix*.exe` and Visual Studio Extension, separately).
 
@@ -166,10 +166,10 @@ Options:
 <b><u>Step 4.</u></b> Build the installer at .
 
 ```console
-    $ cd yp-q2-cathedral/Ultraverse
-    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\Ultraverse.sln
-    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\Ultraverse.sln /p:Configuration="Release"
-    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\Ultraverse.sln /p:Configuration="Debug"
+    $ cd yp-q2-cathedral/StarEcho
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /p:Configuration="Release"
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /p:Configuration="Debug"
 ```
 
-<b><u>Step 5.</u></b> The installer is created at `yp-q2-cathedral-main\yp-q2-cathedral-main\Ultraverse\Setup\bin\x64\Debug\Setup.msi` and `yp-q2-cathedral-main\yp-q2-cathedral-main\Ultraverse\Setup\bin\x64\Release\Setup.msi`.
+<b><u>Step 5.</u></b> The installer is created at `yp-q2-cathedral-main\yp-q2-cathedral-main\StarEcho\Setup\bin\x64\Debug\Setup.msi` and `yp-q2-cathedral-main\yp-q2-cathedral-main\StarEcho\Setup\bin\x64\Release\Setup.msi`.

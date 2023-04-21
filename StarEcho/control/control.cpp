@@ -28,17 +28,17 @@ HINSTANCE hInstance()
 const wchar_t * windowNameW()
 {
     // should differ from installer caption to be able to find app window
-    return L"Ultraverse Control";
+    return L"StarEcho Control";
 }
 
 const wchar_t * appNameW()
 {
-    return L"Ultraverse";
+    return L"StarEcho";
 }
 
 const char * appName()
 {
-    return "Ultraverse";
+    return "StarEcho";
 }
 
 //

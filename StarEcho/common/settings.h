@@ -2,7 +2,7 @@
 
 namespace Settings
 {
-    const auto appPath = L"HKEY_LOCAL_MACHINE\\SOFTWARE\\Ultraverse Control"sv;
+    const auto appPath = L"HKEY_LOCAL_MACHINE\\SOFTWARE\\StarEcho Control"sv;
 
     std::wstring currentEffect();
     void setEffect(const std::wstring & value);
