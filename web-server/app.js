@@ -9,15 +9,14 @@ const https = require("https");
 const fs = require('fs');
 const { execSync } = require('child_process');
 const UPLOAD_PATH = './public/uploads';
-const CONVERTER_PATH = '/root/yp-q2-cathedral/q2cathedral';
-const VOLUME_MATCHER_PATH = 'python3 /root/yp-q2-cathedral/volume-matcher.py';
+const CONVERTER_PATH = '../q2cathedral';
+const VOLUME_MATCHER_PATH = 'python3 ../volume-matcher.py';
 const argparse = require('argparse');
 
 var picSchema= new mongoose.Schema({
 	picpath:String
 })
 
-var picModel = mongoose.model('picsdemo',picSchema);
 
 var storage = multer.diskStorage({
 	destination:function(req,file,cb){
@@ -33,6 +32,8 @@ var app = express();
 
 mongoose.connect('mongodb://localhost:27017/pics',{useNewUrlParser: true, useUnifiedTopology: true})
 .then(()=>console.log('connected to mongoose')).catch(err=>console.log('error ocured',err));
+
+var picModel = mongoose.model('picsdemo',picSchema);
 
 app.set('views',path.resolve(__dirname,'views'));
 app.set('view engine','ejs');

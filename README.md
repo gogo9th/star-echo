@@ -173,3 +173,33 @@ Options:
 ```
 
 <b><u>Step 5.</u></b> The installer is created at `yp-q2-cathedral-main\yp-q2-cathedral-main\StarEcho\Setup\bin\x64\Debug\Setup.msi` and `yp-q2-cathedral-main\yp-q2-cathedral-main\StarEcho\Setup\bin\x64\Release\Setup.msi`.
+
+
+
+## Music Converter Web Server Setup
+
+<b><u>Step 1.</u></b> 
+```console
+	$ cd web-server
+	$ npm install
+```
+
+<b><u>Step 2.</u></b> Install libssl 1.1 and MongoDB ([https://blog.stackademic.com/mongodb-cluster-setup-on-ubuntu-23-04-x64-223193fcdb5e](https://blog.stackademic.com/mongodb-cluster-setup-on-ubuntu-23-04-x64-223193fcdb5e))
+```console
+	$ wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+	$ dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+	$ apt update
+	$ apt install libssl1.1
+
+	$ wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+	$ echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+	$ apt update
+	$ apt install -y mongodb-org
+	$ sudo systemctl enable mongod
+	$ sudo systemctl start mongod
+	$ sudo systemctl status mongod
+```
+<b><u>Step 3.</u></b> Run the web server (at port 3000).
+```console
+	$ node app.js --http
+

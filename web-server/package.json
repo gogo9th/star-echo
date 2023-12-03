@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "argparse": "^2.0.1",
     "async": "^3.2.4",
     "body-parser": "^1.19.0",
     "ejs": "^2.7.1",
