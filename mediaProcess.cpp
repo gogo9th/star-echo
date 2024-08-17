@@ -142,11 +142,8 @@ static scoped_ptr<AVCodecContext> createCodec(AVCodecParameters * codecpar,
     if ((r = avcodec_open2(ctx, codec, NULL)) != 0)
         throw MPError("failed to open codec", r);
 
-    if (ctx->channel_layout == 0)
-    {
-        ctx->channel_layout = av_get_default_channel_layout(codecpar->channels);
-    }
-
+    if (ctx->ch_layout.nb_channels == 0)
+        av_channel_layout_default(&ctx->ch_layout, codecpar->ch_layout.nb_channels);
     return ctx;
 }
 
@@ -401,8 +398,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     if (!audioStream) throw MPError("no audio stream is found");
 
     auto audioCodecIn = createCodec(audioStream->codecpar);
-    const int srcChannelLayout = audioCodecIn->channel_layout;
-
+    const int srcChannelLayout = audioCodecIn->ch_layout.nb_channels;
     auto imageCodecIn = createCodec(imageStream ? imageStream->codecpar : nullptr);
 
     // *** Set up the input format ctx ***
@@ -463,13 +459,13 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         /* Force the sampling format to be signed-X-bit-planar */
         /* Force the sampling rate to be agreed sample rate */
 
-        if (audioCodecIn->channel_layout != (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
+        if (audioCodecIn->ch_layout.nb_channels != (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
             || audioCodecIn->sample_fmt != filterFormat
             || (audioCodecIn->sample_rate != filterSampleRate))
         {   // Arguments: (swr_ctx, out, out, out, in, in, in, log_offset, log_ctx)
             swr_in.reset(swr_alloc_set_opts(NULL,
                                             AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, filterFormat, filterSampleRate,
-                                            audioCodecIn->channel_layout, audioCodecIn->sample_fmt, audioCodecIn->sample_rate,
+                                            audioCodecIn->ch_layout.nb_channels, audioCodecIn->sample_fmt, audioCodecIn->sample_rate,
                                             0, NULL));
             if (!swr_in) throw MPError("swr_alloc_set_opts failed");
 
@@ -499,8 +495,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
     // Tentatively set up the output audio codec paramaters based on the input audio codec parameters
     AVCodecParameters params {};
-    params.channels = 2;
-    params.channel_layout = AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT;
+    av_channel_layout_default(&params.ch_layout, 2);
     params.sample_rate = filterSampleRate;
     params.bit_rate = audioCodecIn->bit_rate;
     params.codec_type = AVMEDIA_TYPE_AUDIO;
@@ -610,7 +605,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     scoped_ptr<AVFrame> frame_in(av_frame_alloc(), [] (auto * d) { av_frame_free(&d); });
     if (!frame_in) throw MPError("failed to allocate frame");
 
-    scoped_ptr<AVAudioFifo> fifo(av_audio_fifo_alloc(audioCodecOut->sample_fmt, audioCodecOut->channels, std::max(audioCodecOut->frame_size, 1)),
+    scoped_ptr<AVAudioFifo> fifo(av_audio_fifo_alloc(audioCodecOut->sample_fmt, audioCodecOut->ch_layout.nb_channels, std::max(audioCodecOut->frame_size, 1)),
                                  [] (auto * d) { av_audio_fifo_free(d); });
     if (!fifo) throw MPError("failed to allocate fifo");
 
@@ -697,7 +692,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
         // If some non-zero sample size of the input frame is successfully decoded 
         if (r != AVERROR_EOF && frame_in->nb_samples > 0)
         {   // If the current channel's layout id is different than the one specified in the input codec
-            if (frame_in->channel_layout != srcChannelLayout)
+            if (frame_in->ch_layout.nb_channels != srcChannelLayout)
             {
                 // Oh, the channel layout can dynamically change in the middle lol
                 throw MPError("channel layout had changed in the middle");
@@ -768,7 +763,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                     // l/rbOut -> fifo buffers
 
                     auto swrOutSamples = swr_get_out_samples(swr_out, nb_samples);
-                    auto channels = av_get_channel_layout_nb_channels(audioCodecOut->channels);
+                    auto channels = av_get_channel_layout_nb_channels(audioCodecOut->ch_layout.nb_channels);
                     auto bs = av_samples_get_buffer_size(0, channels, swrOutSamples, audioCodecOut->sample_fmt, 0);
 
                     // Resize to required size but send both buffers even for interleaved
@@ -815,8 +810,8 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
             if (!frame_out) throw MPError("failed to allocate an output frame");
 
             frame_out->format = audioCodecOut->sample_fmt;
-            frame_out->channel_layout = audioCodecOut->channel_layout;
-            frame_out->channels = audioCodecOut->channels;
+            frame_out->ch_layout.nb_channels = audioCodecOut->ch_layout.nb_channels;
+            av_channel_layout_copy(&frame_out->ch_layout, &audioCodecOut->ch_layout);
             frame_out->sample_rate = audioCodecOut->sample_rate;
 
             do
