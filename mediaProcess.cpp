@@ -473,7 +473,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
                                     &stereoLayout, filterFormat, filterSampleRate,
                                     &audioCodecIn->ch_layout, audioCodecIn->sample_fmt, audioCodecIn->sample_rate,
                                     0, NULL);
-            if (r != 0) throw MPError("swr_alloc_set_opts2 failed", r);
+            if (r != 0) throw MPError("swr_alloc_set_opts2 (in) failed", r);
 
             if ((r = swr_init(swr_in)) != 0) throw MPError("input converter init failed", r);
         }
@@ -583,12 +583,19 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     // If the output codec parameter is not what we want, then create awr_out as a format converter
     if (audioCodecOut->sample_fmt != filterFormat)
     {
-        swr_out.reset(swr_alloc_set_opts(NULL,
-                                         AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, audioCodecOut->sample_fmt, filterSampleRate,
-                                         AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT, filterFormat, filterSampleRate,
-                                         0, NULL));
-        if (!swr_out) throw MPError("swr_alloc_set_opts failed");
-        if ((r = swr_init(swr_out)) != 0) throw MPError("input converter init failed", r);
+        swr_out.reset(swr_alloc());
+        if (!swr_out) throw MPError("swr_alloc failed");
+
+        AVChannelLayout stereoLayout = AV_CHANNEL_LAYOUT_STEREO;
+        auto swr_out_ = swr_out.get();
+
+        r = swr_alloc_set_opts2(&swr_out_,
+                                &stereoLayout, audioCodecOut->sample_fmt, filterSampleRate,
+                                &stereoLayout, filterFormat, filterSampleRate,
+                                0, NULL);
+        if (r != 0) throw MPError("swr_alloc_set_opts2 (out) failed", r);
+
+        if ((r = swr_init(swr_out)) != 0) throw MPError("output converter init failed", r);
     }
 
     //
