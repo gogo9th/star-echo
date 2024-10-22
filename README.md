@@ -202,4 +202,8 @@ Options:
 <b><u>Step 3.</u></b> Run the web server (at port 3000).
 ```console
 	$ node app.js --http
-
+        ### or use pm2 ###
+        $ pm2 kill
+        $ pm2 resurrect
+        $ pm2 start app.js --http
+```
