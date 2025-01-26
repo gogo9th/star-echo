@@ -1,11 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Include>
-  <!-- Product name as you want it to appear in Add/Remove Programs-->
+﻿<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <?if $(var.Platform) = x64 ?>
-    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
     <?define PlatformSystemFolder = "System64Folder" ?>
-  <?else ?>
-    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+  <?else?>
     <?define PlatformSystemFolder = "SystemFolder" ?>
-  <?endif ?>
+  <?endif?>
 </Include>

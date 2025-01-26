@@ -1,36 +1,29 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
-     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <?include $(sys.CURRENTDIR)\vars.wxi?>
 
   <?define ProductVersion="1.0.8.0"?>
 
-  <Product Id="*"
-           Name="StarEcho"
-           Language="1033"
-           Version="$(var.ProductVersion)"
-           Manufacturer="gogo9th"
-           UpgradeCode="c0a4396d-6b68-4e60-9031-98337cd5bca6">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" Comments="Version $(var.ProductVersion)"/>
-    <MediaTemplate EmbedCab="yes"/>
+  <Package Name="StarEcho" Language="1033" Version="$(var.ProductVersion)" Manufacturer="gogo9th" UpgradeCode="c0a4396d-6b68-4e60-9031-98337cd5bca6" InstallerVersion="200">
+
+    <MediaTemplate EmbedCab="yes" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
 
     <Feature Id="Application" Title="StarEcho" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
-      <ComponentRef Id='ProgramMenuShortcuts' />
+      <ComponentRef Id="ProgramMenuShortcuts" />
     </Feature>
 
     <UI>
-      <UIRef Id="WixUI_InstallDir"/>
+      <ui:WixUI Id="WixUI_InstallDir" />
 
-      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication" Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed" />
     </UI>
 
-    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1"/>
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch StarEcho application after install" />
-    
-    <Icon Id="AppIcon" SourceFile="$(var.control.ProjectDir)\control.ico"/>
+
+    <Icon Id="AppIcon" SourceFile="$(var.control.ProjectDir)\control.ico" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
     <!--Property Id="ARPURLINFOABOUT" Value="https://" /-->
     <!--Property Id="ARPCOMMENTS" Value="Comments" /-->
@@ -41,42 +34,30 @@
     <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
 
-    <util:CloseApplication CloseMessage="yes" Target="scontrol.exe" Description="Please close [ProductName] before continuing." RebootPrompt="no"/>
+    <util:CloseApplication CloseMessage="yes" Target="scontrol.exe" Description="Please close [ProductName] before continuing." RebootPrompt="no" />
 
-  </Product>
+  </Package>
 
 
   <Fragment>
-
     <Component Id="ProgramMenuShortcuts" Guid="EF543DDA-B9FA-41B1-8E2C-8C9C8AE60845" Directory="ProgramMenuDir">
       <!--<Shortcut Id="desktopShortcut" Name="StarEcho Control" Icon='AppIcon' Directory="DesktopFolder"
                 Target='[#controlApp]'
                 WorkingDirectory='APPLICATIONFOLDER' Advertise='no'/>
       -->
-      <Shortcut Id="startmenuShortcut" Name="StarEcho Control"
-                Target='[#controlApp]'
-                WorkingDirectory='APPLICATIONFOLDER'/>
+      <Shortcut Id="startmenuShortcut" Name="StarEcho Control" Target="[#controlApp]" WorkingDirectory="INSTALLFOLDER" />
 
-      <Shortcut Id="UninstallProduct" Name="Uninstall StarEcho" Target="[PlatformSystemFolder]msiexec.exe" Arguments="/x [ProductCode]"
-                Description="Uninstalls StarEcho"/>
-      <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
-      <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+      <Shortcut Id="UninstallProduct" Name="Uninstall StarEcho" Target="[PlatformSystemFolder]msiexec.exe" Arguments="/x [ProductCode]" Description="Uninstalls StarEcho" />
+      <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" KeyPath="yes" />
     </Component>
 
 
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="$(var.PlatformProgramFilesFolder)">
-        <Directory Id="INSTALLFOLDER" Name="StarEcho" />
-      </Directory>
-      <Directory Id="ProgramMenuFolder">
-        <Directory Id="ProgramMenuDir" Name="StarEcho">
-        </Directory>
-      </Directory>
-    </Directory>
+
 
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
       <Component Id="Application" Guid="{EBD79ADB-D399-4D5E-8288-B12D994882A4}">
-        <File Id="controlApp" Source="$(var.control.TargetPath)"/>
+        <File Id="controlApp" Source="$(var.control.TargetPath)" />
       </Component>
 
       <Component Id="APO" Guid="{84ABCC18-8F85-4CBA-B8D7-428D7DD9FAEB}">
@@ -101,35 +82,41 @@
 
       <Component Id="Registry" Guid="{821AA096-7EF5-488C-8DD6-AB4D7F2D1F9D}">
         <!-- Settings key name should be equal to one specified in settings source file  -->
-        <RegistryKey Id="AppRoot" Root="HKLM" Key="SOFTWARE\StarEcho control" Action="create">
-          <util:PermissionEx User="Users" GenericAll="yes"/>
-          <RegistryValue Name="Settings" Value="disable" Type="string" Action="write"/>
+        <RegistryKey Id="AppRoot" Root="HKLM" Key="SOFTWARE\StarEcho control" ForceCreateOnInstall="yes">
+          <util:PermissionEx User="Users" GenericAll="yes" Inheritable="no" />
+          <RegistryValue Name="Settings" Value="disable" Type="string" Action="write" />
         </RegistryKey>
       </Component>
 
       <Component Id="UserRegistry" Guid="{E421F5EE-F9DB-474D-B155-D0CA392A9208}">
         <!-- Autorun key name should be equal to appName(W)() value -->
         <RegistryKey Root="HKCU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Run">
-          <RegistryValue Name="StarEcho" Value="[#controlApp]" Type="string" Action="write"/>
+          <RegistryValue Name="StarEcho" Value="[#controlApp]" Type="string" Action="write" />
         </RegistryKey>
       </Component>
 
     </ComponentGroup>
 
-    <CustomAction Id="Install" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
-              ExeCommand="[#controlApp] installAll" />
+    <CustomAction Id="Install" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore" ExeCommand="[#controlApp] installAll" />
 
-    <CustomAction Id="Uninstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore"
-              ExeCommand="[#controlApp] uninstall" />
+    <CustomAction Id="Uninstall" Directory="INSTALLFOLDER" Execute="deferred" Impersonate="no" Return="ignore" ExeCommand="[#controlApp] uninstall" />
 
     <Property Id="WixShellExecTarget" Value="[#controlApp]" />
-    <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
-    
+    <CustomAction Id="LaunchApplication" DllEntry="WixShellExec" Impersonate="yes" BinaryRef="Wix4UtilCA_X86" />
+
     <InstallExecuteSequence>
-      <Custom Action='Install' After='PublishProduct'>NOT REMOVE</Custom>
-      <Custom Action='Uninstall' After='InstallInitialize'>Installed AND (REMOVE = "ALL")</Custom>
+      <Custom Action="Install" After="PublishProduct" Condition="NOT REMOVE" />
+      <Custom Action="Uninstall" After="InstallInitialize" Condition="Installed AND (REMOVE = &quot;ALL&quot;)" />
       <!--Custom Action="WixCloseApplications" Before="InstallValidate"></Custom-->
     </InstallExecuteSequence>
 
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="StarEcho" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="StarEcho">
+      </Directory>
+    </StandardDirectory>
   </Fragment>
 </Wix>
