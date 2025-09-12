@@ -128,7 +128,7 @@ app.post('/', upload.single('pic'), (req,res)=>{
 			console.log("CMD0: " + cmd);
 			var stdout = execSync(cmd);
 
-			var cmd = CONVERTER_PATH + ' -n -i "public/' + x.replace('"', '\\"') + '" ' + obj.filter +  ' -o "public/' + obj.filename.replace('"', '\\"') + '"';
+			var cmd = CONVERTER_PATH + ' -n -s 5 -i "public/' + x.replace('"', '\\"') + '" ' + obj.filter +  ' -o "public/' + obj.filename.replace('"', '\\"') + '"';
 			console.log("CMD1: " + cmd);
 			var stdout = execSync(cmd);
 

@@ -67,7 +67,7 @@ enum
     NI_Cafe,
     NI_LiveCafe,
     NI_Concert,
-    NI_Church,
+    NI_Cathedral,
     NI_Disable,
     NI_BOTITEM = NI_Disable,
     NI_Setup,
@@ -87,7 +87,7 @@ static const std::map<int, const wchar_t *> g_modes_ = {
     { NI_Cafe,        L"cafe" },
     { NI_LiveCafe,    L"livecafe" },
     { NI_Concert,     L"concert" },
-    { NI_Church,      L"church" },
+    { NI_Cathedral,      L"cathedral" },
 };
 
 static const std::wstring auup_mode = { L"upscaling" };
@@ -236,7 +236,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             InsertMenuW(hMenu, NI_Cafe,     MF_BYCOMMAND, NI_Cafe,      L"Cafe");
             InsertMenuW(hMenu, NI_LiveCafe, MF_BYCOMMAND, NI_LiveCafe,  L"Live Cafe");
             InsertMenuW(hMenu, NI_Concert,  MF_BYCOMMAND, NI_Concert,   L"Concert");
-            InsertMenuW(hMenu, NI_Church,   MF_BYCOMMAND, NI_Church,    L"Church");
+            InsertMenuW(hMenu, NI_Cathedral,   MF_BYCOMMAND, NI_Cathedral,    L"Cathedral");
             InsertMenuW(hMenu, NI_Disable,  MF_BYCOMMAND, NI_Disable,   L"Off");
             InsertMenuW(hMenu, -1, MF_SEPARATOR, 0, nullptr);
 
@@ -275,8 +275,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
                 if (currentMode < 0)
                 {
-                    Settings::setEffect(std::wstring(g_modes_.at(NI_Church)));
-                    CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Church, MF_BYCOMMAND);
+                    Settings::setEffect(std::wstring(g_modes_.at(NI_Cathedral)));
+                    CheckMenuRadioItem(hMenu, NI_TOPITEM, NI_BOTITEM, NI_Cathedral, MF_BYCOMMAND);
                 }
             }
         }

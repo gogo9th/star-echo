@@ -426,7 +426,6 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     }
 
 
-    int silence = filterFab_.getSilence();
     int filterSampleRate = audioCodecIn->sample_rate;
 
     std::visit([&filterSampleRate] (auto && filters)
@@ -637,6 +636,9 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
 
     // Read one audio frame from the input file into a temporary packet.
     bool input_eof = false;
+    int silence = filterFab_.getSilence();
+    bool is_silence_handled = (silence == 0);
+    int silence_samples = silence * filterSampleRate;
     while (!input_eof)
     {
         {
@@ -708,49 +710,63 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
             }
         }
         // If some non-zero sample size of the input frame is successfully decoded 
-        if (r != AVERROR_EOF && frame_in->nb_samples > 0)
-        {   // If the current channel's layout id is different than the one specified in the input codec
-            if (frame_in->ch_layout.nb_channels != srcChannels)
-            {
-                // Oh, the channel layout can dynamically change in the middle lol
-                throw MPError("channel layout had changed in the middle");
-            }
+        if (r != AVERROR_EOF && frame_in->nb_samples > 0 || !is_silence_handled)
+        {  int nb_samples;
+           if (r != AVERROR_EOF && frame_in->nb_samples > 0) 
+           {    // If the current channel's layout id is different than the one specified in the input codec
+					if (frame_in->ch_layout.nb_channels != srcChannels)
+					{
+						 // Oh, the channel layout can dynamically change in the middle lol
+						 throw MPError("channel layout had changed in the middle");
+					}
 
-            // This is the input music file's decoded raw frame
-            int nb_samples = frame_in->nb_samples;
+					// This is the input music file's decoded raw frame
+					nb_samples = frame_in->nb_samples;
 
-            // If the input music file is NOT in the format we want (44kHz stereo, signe 16 bits, planar)
-            if (swr_in)
-            {
-                // frame -> l/rb
+					// If the input music file is NOT in the format we want (44kHz stereo, signe 16 bits, planar)
+					if (swr_in)
+					{
+						 // frame -> l/rb
 
-                // An upper bound on the number of samples that the next swr_convert will output
-                auto swrOutSamples = swr_get_out_samples(swr_in, nb_samples);
+						 // An upper bound on the number of samples that the next swr_convert will output
+						 auto swrOutSamples = swr_get_out_samples(swr_in, nb_samples);
 
-                // Dynamically increase the lb, rb vector size to be the maximum number of samples 
-                //  across all decoded raw frames of the input music file
-                filters.index() ? ftype1.resizeIn(swrOutSamples) : ftype0.resizeIn(swrOutSamples);
+						 // Dynamically increase the lb, rb vector size to be the maximum number of samples 
+						 //  across all decoded raw frames of the input music file
+						 filters.index() ? ftype1.resizeIn(swrOutSamples) : ftype0.resizeIn(swrOutSamples);
 
-                auto buffers = (filters.index() ? ftype1.buffersIn() : ftype0.buffersIn());
+						 auto buffers = (filters.index() ? ftype1.buffersIn() : ftype0.buffersIn());
 
-                // Convert the input music file's decoded raw frame to be our desired format (signed 16-bits, planar, 44100 fps)
-                nb_samples = swr_convert(swr_in, buffers.data(), swrOutSamples, (const uint8_t **)frame_in->data, nb_samples);
-                // cannot // assert(nb_samples == cwrOutSamples);
+						 // Convert the input music file's decoded raw frame to be our desired format (signed 16-bits, planar, 44100 fps)
+						 nb_samples = swr_convert(swr_in, buffers.data(), swrOutSamples, (const uint8_t **)frame_in->data, nb_samples);
+						 // cannot // assert(nb_samples == cwrOutSamples);
 
-                // 128 bytes gap of Q2 ClaStr filter output to CH
-                //if (isFirstChunk)
-                //{
-                //    nb_samples += 128;
-                //    lb.insert(lb.begin(), 128, 0);
-                //    rb.insert(rb.begin(), 128, 0);
-                //    isFirstChunk = false;
-                //}
-            }
-            // If the input music file is in the format we want
-            else
-            {
-                filters.index() ? ftype1.buffersExt(frame_in->data[0], frame_in->data[1], nb_samples) : ftype0.buffersExt(frame_in->data[0], frame_in->data[1], nb_samples);
-            }
+						 // 128 bytes gap of Q2 ClaStr filter output to CH
+						 //if (isFirstChunk)
+						 //{
+						 //    nb_samples += 128;
+						 //    lb.insert(lb.begin(), 128, 0);
+						 //    rb.insert(rb.begin(), 128, 0);
+						 //    isFirstChunk = false;
+						 //}
+					}
+					// If the input music file is in the format we want
+					else
+					{
+						 filters.index() ? ftype1.buffersExt(frame_in->data[0], frame_in->data[1], nb_samples) : ftype0.buffersExt(frame_in->data[0], frame_in->data[1], nb_samples);
+					}
+           }
+           else
+           {     nb_samples = silence_samples; 
+                 filters.index() ? ftype1.resizeIn(nb_samples) : ftype0.resizeIn(nb_samples);
+                 auto in_planes_vec = (filters.index() ? ftype1.buffersIn() : ftype0.buffersIn());
+                 uint8_t **in_planes = in_planes_vec.data(); 
+                 const int n_channels = 2; // you force stereo 
+                 audioCodecOut->sample_fmt; 
+                 av_samples_set_silence(in_planes, /*offset=*/0, nb_samples, n_channels, filterFormat); 
+                 filters.index() ? ftype1.resizeOut(nb_samples) : ftype0.resizeOut(nb_samples);
+                 is_silence_handled = true;
+           }
 
             // Filter-processing
 

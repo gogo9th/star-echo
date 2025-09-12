@@ -112,10 +112,10 @@ int main(int argc, char ** argv)
         ("input,i", uvalue(&input)->composing(), "Input file(s)/directory.\n- [Default: the current directory]")
         ("output,o", uvalue(&output), "If the input is a directory, then output should be a directory.\nIf the input is a file, then the output should be a filename.\nIf the inputs are multiple files, then this option is ignored.\n- [Default: './FINAL' directory]")
         ("threads,t", po::value(&threads), "The number of CPU threads to run.\n- [Default: the processor's available total cores]")
-        ("keepFormat,k", po::bool_switch(&keepFormat), "Keep each output file's format the same as its source file's.\n- [Default: the output format is .flac]")
+        ("keep-format,k", po::bool_switch(&keepFormat), "Keep each output file's format the same as its source file's.\n- [Default: the output format is .flac]")
         ("overwrite,w", po::bool_switch(&overwrite), "Overwrite output file if it exists [Default: false]")
         ("normalize,n", po::bool_switch(&normalize), "Normalize the sound to avoid rips [Default: false]")
-        ("silence,s", po::value(&silence), "Appended duration (s) of silence [Default: 0]")
+        ("silence,s", po::value(&silence), "Append silence in seconds [Default: 0]")
         ("filter,f", po::value(&filters), "\
 Filter(s) to be applied:\n\
  CH[,roomSize[,gain]] - Cathedral,\n\
@@ -138,7 +138,7 @@ Predefined filters:\n\
  cafe,\n\
  livecafe,\n\
  concert,\n\
- church,\n\
+ cathedral,\n\
  upscaling")
 ;
     po::positional_options_description posd;

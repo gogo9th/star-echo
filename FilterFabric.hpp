@@ -28,10 +28,10 @@ class FilterFabric
     }
 
 public:
-    FilterFabric(bool doDbReduce = true, int silence)
+    FilterFabric(bool doDbReduce = true, int silence = 0)
         : doDbReduce_(doDbReduce), silence_(silence)
     {}
-
+    int getSilence() const noexcept { return silence_; }  // inline + const 
     bool addDesc(std::wstring desc)
     {
         static const std::map<std::wstring, std::wstring> aliases = {
@@ -46,7 +46,7 @@ public:
             { L"cafe", L"ch,1,7" },
             { L"concert", L"ch,5,7" },
             { L"livecafe", L"ch,13,10" },
-            { L"church", L"ch,10,9" },
+            { L"cathedral", L"ch,10,9" },
         };
 
         auto filters = stringSplit(desc, L";");
@@ -97,9 +97,6 @@ public:
         return r;
     }
 
-    int getSilence()
-    {   return silence_
-    }
 private:
     template<typename sampleType, typename wideSampleType>
     std::vector<std::unique_ptr<Filter<sampleType, wideSampleType>>> createFilter(const std::wstring & desc) const

@@ -61,11 +61,12 @@ Options:
                         - [Default: './FINAL' directory]
   -t [ --threads ] arg  The number of CPU threads to run.
                         - [Default: the processor's available total cores]
-  -k [ --keepFormat ]   Keep each output file's format the same as its source
+  -k [ --keep-format ]   Keep each output file's format the same as its source
                         file's.
                         - [Default: the output format is .flac]
   -w [ --overwrite ]    overwrite output file if it exists [Default: false]
   -n [ --normalize ]    normalize the sound to avoid rips [Default: false]
+  -s [ --silence ]      Append silence in seconds [Default: 0]
   -f [ --filter ] arg   Filter(s) to be applied:
                          CH[,roomSize[,gain]] - Cathedral,
                            Default is 'CH,10,9' if parameters omitted
@@ -87,7 +88,7 @@ Options:
                          cafe,
                          livecafe,
                          concert,
-                         church,
+                         cathedral,
                          upscaling
 ```
 
