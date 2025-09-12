@@ -103,7 +103,7 @@ int main(int argc, char ** argv)
     bool keepFormat = false;
     bool overwrite = false;
     bool normalize = false;
-    int silence = 0;
+    int silence = -1;
 
     po::variables_map opts_map;
     po::options_description options("Options");
@@ -247,7 +247,11 @@ Predefined filters:\n\
     if (filters.empty())
     {
         filters.push_back("ch");
+        if (silence == -1)
+           silence = 5;
     }
+    if (silence == -1)
+        silence = 0;
 
     FilterFabric fab(!normalize, silence);
     for (const auto & desc : filters)
