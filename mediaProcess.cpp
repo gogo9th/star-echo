@@ -426,6 +426,7 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     }
 
 
+    int silence = filterFab_.getSilence();
     int filterSampleRate = audioCodecIn->sample_rate;
 
     std::visit([&filterSampleRate] (auto && filters)

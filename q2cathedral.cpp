@@ -103,7 +103,7 @@ int main(int argc, char ** argv)
     bool keepFormat = false;
     bool overwrite = false;
     bool normalize = false;
-
+    int silence = 0;
 
     po::variables_map opts_map;
     po::options_description options("Options");
@@ -113,8 +113,9 @@ int main(int argc, char ** argv)
         ("output,o", uvalue(&output), "If the input is a directory, then output should be a directory.\nIf the input is a file, then the output should be a filename.\nIf the inputs are multiple files, then this option is ignored.\n- [Default: './FINAL' directory]")
         ("threads,t", po::value(&threads), "The number of CPU threads to run.\n- [Default: the processor's available total cores]")
         ("keepFormat,k", po::bool_switch(&keepFormat), "Keep each output file's format the same as its source file's.\n- [Default: the output format is .flac]")
-        ("overwrite,w", po::bool_switch(&overwrite), "overwrite output file if it exists [Default: false]")
-        ("normalize,n", po::bool_switch(&normalize), "normalize the sound to avoid rips [Default: false]")
+        ("overwrite,w", po::bool_switch(&overwrite), "Overwrite output file if it exists [Default: false]")
+        ("normalize,n", po::bool_switch(&normalize), "Normalize the sound to avoid rips [Default: false]")
+        ("silence,s", po::value(&silence), "Appended duration (s) of silence [Default: 0]")
         ("filter,f", po::value(&filters), "\
 Filter(s) to be applied:\n\
  CH[,roomSize[,gain]] - Cathedral,\n\
@@ -248,7 +249,7 @@ Predefined filters:\n\
         filters.push_back("ch");
     }
 
-    FilterFabric fab(!normalize);
+    FilterFabric fab(!normalize, silence);
     for (const auto & desc : filters)
     {
         auto r = fab.addDesc(stringToWstring(desc));

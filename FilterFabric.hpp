@@ -28,8 +28,8 @@ class FilterFabric
     }
 
 public:
-    FilterFabric(bool doDbReduce = true)
-        : doDbReduce_(doDbReduce)
+    FilterFabric(bool doDbReduce = true, int silence)
+        : doDbReduce_(doDbReduce), silence_(silence)
     {}
 
     bool addDesc(std::wstring desc)
@@ -97,7 +97,9 @@ public:
         return r;
     }
 
-
+    int getSilence()
+    {   return silence_
+    }
 private:
     template<typename sampleType, typename wideSampleType>
     std::vector<std::unique_ptr<Filter<sampleType, wideSampleType>>> createFilter(const std::wstring & desc) const
@@ -185,5 +187,6 @@ private:
     }
 
     bool doDbReduce_;
+    int silence_;
     std::vector<std::wstring> descs_;
 };
