@@ -9,7 +9,7 @@
 
 - Already converted music files in the past (whose converted version already exists in the `"FINAL"` folder) are skipped. 
 
-- A pre-built Windows software is available:  [`star-echo.exe`](https://github.com/gogo9th/star-echo/blob/main/star-echo.exe) (but might get blocked by Windows Defender, so you need to turn it off).
+- A pre-built Windows software is available:  [`star_echo.exe`](https://github.com/gogo9th/star-echo/blob/main/star_echo.exe) (but might get blocked by Windows Defender, so you need to turn it off).
 
 - Music File Conversion Web Server: [http://winterstar.org:3000](http://winterstar.org:3000)
 
@@ -131,7 +131,7 @@ $ ./star-echo -i musicFolder
     $ cmake --build . --config Release
 ```
 
-<b><u>Step 7.</u></b> Check if `star-echo.exe` is created in the Release folder.
+<b><u>Step 7.</u></b> Check if `star_echo.exe` is created in the Release folder.
 
 <b><u>Step 8.</u></b> Pack `.exe` and `.dll` files into a single `.exe` file.
 
@@ -139,21 +139,21 @@ $ ./star-echo -i musicFolder
 
 - Run Enigma Virtual Box.
 
-- Choose the input file to be `qe2ffect.exe` in the Release folder.
+- Choose the input file to be `star_echo.exe` in the Release folder.
 
 - Add all 6 .dll files in the Release folder and press OK: `avcodec-\*.dll`, `avformat-\*.dll`, `avutil-\*.dll`, `boost_program_options-\*.dll`, `swresample-\*.dll`, `zlib*.dll`.
 
-- Click "Process" to create `star-echo_boxed.exe`.
+- Click "Process" to create `star_echo_boxed.exe`.
 
 
-<b><u>Step 9.</u></b> Run the created `star-echo_boxed.exe`.
+<b><u>Step 9.</u></b> Run the created `star_echo_boxed.exe`.
 
 * <u>Option 1:</u> Use a terminal. 
 ```console
     $ cd Release
-    $ ./star-echo_boxed.exe --help 
+    $ ./star_echo_boxed.exe --help 
 ```
-* <u>Option 2:</u> Double-click the generated `star-echo_boxed.exe`, then all music files in the same directory will be converted and stored in the `"FINAL"` folder.
+* <u>Option 2:</u> Double-click the generated `star_echo_boxed.exe`, then all music files in the same directory will be converted and stored in the `"FINAL"` folder.
 
 
 
