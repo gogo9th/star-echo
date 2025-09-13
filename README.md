@@ -9,9 +9,11 @@
 
 - Already converted music files in the past (whose converted version already exists in the `"FINAL"` folder) are skipped. 
 
-- A pre-built Windows software is available:  [star_echo_boxed.exe](https://github.com/gogo9th/star-echo/blob/main/star_echo_boxed.exe) (but might get blocked by Windows Defender, so you need to turn it off).
+## Ready-to-use Software
 
-- Real-time Audio Filtering Engine: [Setup.smi](https://github.com/gogo9th/star-echo/blob/main/Setup.msi)
+- Windows Music File Converter:  [star_echo_boxed.exe](https://github.com/gogo9th/star-echo/blob/main/star_echo_boxed.exe)
+
+- Windows Real-time Audio Engine: [Setup.smi](https://github.com/gogo9th/star-echo/blob/main/Setup.msi)
 
 - Music File Conversion Web Server: [http://winterstar.org:3000](http://winterstar.org:3000)
 
