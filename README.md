@@ -43,7 +43,7 @@
 
 <b><u>Step 4.</u></b> Run the created `star-echo`.
 ```console
-$ ./q2cathedral --help 
+$ ./star_echo --help 
 Options:
   -h [ --help ]         Display the help message.
   -i [ --input ] arg    Input file(s)/directory.
