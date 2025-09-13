@@ -3,15 +3,15 @@
 
 ## Software Description
 
-- When the software is executed, all music extension files (`.flac, .mp3, .wav, .wma`) in the current directory are applied the Cathedral sound effect and their converted new music files are saved in the `"FINAL"` folder created in the same directory.
+- When the software is executed, all music extension files (`.flac, .mp3, .wav, .wma`) in the current directory are applied the filter's sound effect and their converted new music files are saved in the `"FINAL"` folder created in the same directory.
 
 - All sub-directory structures of original music files are preserved and saved in the `"FINAL"` folder. 
 
 - Already converted music files in the past (whose converted version already exists in the `"FINAL"` folder) are skipped. 
 
-- A pre-built Windows software is available:  [`q2cathedral_windows.exe`](https://github.com/gogo9th/yp-q2-cathedral/blob/main/q2cathedral_windows.exe) (but might get blocked by Windows Defender, so you need to turn it off).
+- A pre-built Windows software is available:  [`star-echo.exe`](https://github.com/gogo9th/star-echo/blob/main/star-echo.exe) (but might get blocked by Windows Defender, so you need to turn it off).
 
-- Music File Conversion Web Server: [https://q2cathedral.com](https://q2cathedral.com)
+- Music File Conversion Web Server: [http://winterstar.org:3000](http://winterstar.org:3000)
 
 ## Ubuntu Installation (minimum 20.04 required)
 
@@ -22,26 +22,26 @@
 
 <b><u>Step 2.</u></b> Download the source code.
 ```console
-    $ git clone https://github.com/gogo9th/yp-q2-cathedral
+    $ git clone https://github.com/gogo9th/star-echo
 ```
 
 <b><u>Step 3.</u></b> Compile the source code by using one of the following 2 options:
 
 * <u>*Option A:*</u> Use Makefile to compile.
 ```console
-    $ cd yp-q2-cathedral
+    $ cd star-echo
     $ make
 ```
 * <u>*Option B:*</u> Use CMake to compile.
 ```console
-    $ cd yp-q2-cathedral
+    $ cd star-echo
     $ mkdir build
     $ cd build
     $ cmake ..
     $ make
 ```
 
-<b><u>Step 4.</u></b> Run the created `q2cathedral`.
+<b><u>Step 4.</u></b> Run the created `star-echo`.
 ```console
 $ ./q2cathedral --help 
 Options:
@@ -89,7 +89,7 @@ Options:
 
 
 # Recursive folder-wide cathedral .flac conversion into the folder FINAL
-$ ./q2cathedral -i musicFolder    
+$ ./star-echo -i musicFolder    
 ```
 
 
@@ -119,7 +119,7 @@ $ ./q2cathedral -i musicFolder
 
 <b><u>Step 5.</u></b> Compile the source code.
 ```console
-    $ cd yp-q2-cathedral
+    $ cd star-echo
     $ mkdir build
     $ cd build
       # Replace <Windows user name> to your home directory's user name
@@ -129,7 +129,7 @@ $ ./q2cathedral -i musicFolder
     $ cmake --build . --config Release
 ```
 
-<b><u>Step 6.</u></b> Check if `q2cathedral.exe` is created in the Release folder.
+<b><u>Step 6.</u></b> Check if `star-echo.exe` is created in the Release folder.
 
 <b><u>Step 7.</u></b> Pack `.exe` and `.dll` files into a single `.exe` file.
 
@@ -141,17 +141,17 @@ $ ./q2cathedral -i musicFolder
 
 - Add all 6 .dll files in the Release folder and press OK: `avcodec-\*.dll`, `avformat-\*.dll`, `avutil-\*.dll`, `boost_program_options-\*.dll`, `swresample-\*.dll`, `zlib*.dll`.
 
-- Click "Process" to create `q2cathedral_boxed.exe`.
+- Click "Process" to create `star-echo_boxed.exe`.
 
 
-<b><u>Step 8.</u></b> Run the created `q2cathedral_boxed.exe`.
+<b><u>Step 8.</u></b> Run the created `star-echo_boxed.exe`.
 
 * <u>Option 1:</u> Use a terminal. 
 ```console
     $ cd Release
-    $ ./q2cathedral_boxed.exe --help 
+    $ ./star-echo_boxed.exe --help 
 ```
-* <u>Option 2:</u> Double-click the generated `q2cathedral_boxed.exe`, then all music files in the same directory will be converted and stored in the `"FINAL"` folder.
+* <u>Option 2:</u> Double-click the generated `star-echo_boxed.exe`, then all music files in the same directory will be converted and stored in the `"FINAL"` folder.
 
 
 
@@ -167,13 +167,13 @@ $ ./q2cathedral -i musicFolder
 <b><u>Step 4.</u></b> Build the installer at .
 
 ```console
-    $ cd yp-q2-cathedral/StarEcho
+    $ cd star-echo/StarEcho
     $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln
     $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /p:Configuration="Release"
     $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /p:Configuration="Debug"
 ```
 
-<b><u>Step 5.</u></b> The installer is created at `yp-q2-cathedral-main\yp-q2-cathedral-main\StarEcho\Setup\bin\x64\Debug\Setup.msi` and `yp-q2-cathedral-main\yp-q2-cathedral-main\StarEcho\Setup\bin\x64\Release\Setup.msi`.
+<b><u>Step 5.</u></b> The installer is created at `star-echo-main\star-echo-main\StarEcho\Setup\bin\x64\Debug\Setup.msi` and `star-echo-main\star-echo-main\StarEcho\Setup\bin\x64\Release\Setup.msi`.
 
 
 
