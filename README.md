@@ -99,7 +99,9 @@ $ ./star-echo -i musicFolder
 
 <b><u>Step 2.</u></b> Go and install [Visual Studio C++ Development](https://visualstudio.microsoft.com/ko/downloads/)
 
-<b><u>Step 3.</u></b> Install vcpkg. Open the PowerShell.
+<b><u>Step 3. Go and install [Git](https://git-scm.com/downloads/win)
+
+<b><u>Step 4.</u></b> Install vcpkg. Open the PowerShell.
 
 ```console
     $ cd ~
@@ -108,7 +110,7 @@ $ ./star-echo -i musicFolder
     $ ./bootstrap-vcpkg.bat
 ```
 
-<b><u>Step 4.</u></b> Install the boost and ffmpeg libraries
+<b><u>Step 5.</u></b> Install the boost and ffmpeg libraries
 
 ```console
     $ ./vcpkg.exe install boost-program-options boost-circular-buffer boost-algorithm ffmpeg[avformat] ffmpeg[avcodec] ffmpeg[swresample] ffmpeg[zlib] --triplet x64-windows
@@ -117,7 +119,7 @@ $ ./star-echo -i musicFolder
 (For x32 builds, run `"vcpkg install boost-program-options default"` instead)
 
 
-<b><u>Step 5.</u></b> Compile the source code.
+<b><u>Step 6.</u></b> Compile the source code.
 ```console
     $ cd star-echo
     $ mkdir build
@@ -129,9 +131,9 @@ $ ./star-echo -i musicFolder
     $ cmake --build . --config Release
 ```
 
-<b><u>Step 6.</u></b> Check if `star-echo.exe` is created in the Release folder.
+<b><u>Step 7.</u></b> Check if `star-echo.exe` is created in the Release folder.
 
-<b><u>Step 7.</u></b> Pack `.exe` and `.dll` files into a single `.exe` file.
+<b><u>Step 8.</u></b> Pack `.exe` and `.dll` files into a single `.exe` file.
 
 - Download and install [Enigma Virtual Box](https://enigmaprotector.com/en/downloads.html).
 
@@ -144,7 +146,7 @@ $ ./star-echo -i musicFolder
 - Click "Process" to create `star-echo_boxed.exe`.
 
 
-<b><u>Step 8.</u></b> Run the created `star-echo_boxed.exe`.
+<b><u>Step 9.</u></b> Run the created `star-echo_boxed.exe`.
 
 * <u>Option 1:</u> Use a terminal. 
 ```console
