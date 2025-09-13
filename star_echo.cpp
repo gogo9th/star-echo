@@ -14,7 +14,7 @@ extern "C" {
 
 #include "log.hpp"
 #include "utils.h"
-#include "q2cathedral.h"
+#include "star_echo.h"
 #include "threaded.h"
 #include "mediaProcess.h"
 
@@ -278,3 +278,4 @@ Predefined filters:\n\
 
     return 0;
 }
+
