@@ -1,5 +1,5 @@
 
-# Star Echo - C++ Generic Sound Filters for Music Files (.mp3, .flac, .wav) and Windows Audio Stream
+# Star Echo - Generic Sound Filters for Music Files and Windows Audio Stream
 
 ## Software Description
 
