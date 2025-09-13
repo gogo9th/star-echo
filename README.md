@@ -105,7 +105,7 @@ $ ./star-echo -i musicFolder
 
 ```console
     $ cd ~
-    $ git clone https://github.com/Microsoft/vcpkg.git .
+    $ git clone https://github.com/Microsoft/vcpkg.git 
     $ cd vcpkg
     $ ./bootstrap-vcpkg.bat
 ```
