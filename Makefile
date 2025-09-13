@@ -1,4 +1,4 @@
-SRC :=  mediaProcess.cpp q2cathedral.cpp DNSE_CH_params.cpp DNSE_BE_params.cpp DNSE_AuUp_params.cpp
+SRC :=  mediaProcess.cpp star_echo.cpp DNSE_CH_params.cpp DNSE_BE_params.cpp DNSE_AuUp_params.cpp
 
 CFLAGS = -O2 -g -pthread -std=c++17
 
@@ -9,7 +9,7 @@ CFLAGS = -O2 -g -pthread -std=c++17
 # $ make 
 
 #static:
-#	g++ -static $(CFLAGS) -o q2cathedral mediaProcess.cpp DNSE_CH.cpp q2cathedral.cpp $(STATIC_LIBS) 
+#	g++ -static $(CFLAGS) -o star_echo mediaProcess.cpp DNSE_CH.cpp star_echo.cpp $(STATIC_LIBS) 
 
 .PHONY: clean
 
@@ -21,11 +21,11 @@ SRC_OBJ := $(SRC:.cpp=.o)
 .cpp.o:
 	g++ -c $(CFLAGS) $< -o $@
 
-all:  q2cathedral 
+all:  star_echo 
 
 
-q2cathedral: $(SRC_OBJ)
+star_echo: $(SRC_OBJ)
 	g++ -o $@ $(SRC_OBJ) -lavformat -lavcodec -lavutil -lswresample -lboost_program_options -lpthread
 
 clean: 
-	rm -f q2cathedral *.o *.a
+	rm -f star_echo *.o *.a
