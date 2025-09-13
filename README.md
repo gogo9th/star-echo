@@ -1,9 +1,5 @@
 
-# Samsung Q2-YP MP3 Player's Cathedral Sound Effect Generator
-
-
-This software generates the same sound effect as the reverse-engineered [Samsung YP-Q2 MP3 player firmware](https://github.com/LemonBoy/Q2-Tools)'s Cathedral sound filter.
-
+# Star Echo - C++ Generic Sound Filters for Music Files (.mp3, .flac, .wav) and Windows Audio Stream
 
 ## Software Description
 
