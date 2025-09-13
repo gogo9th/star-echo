@@ -1,5 +1,5 @@
 
-# Star Echo - Applying Filters to Music Files & Windows Audio Streams
+# Star Echo - Applying Filters to Music Files & Windows Audio Engine
 
 ## Software Description
 
@@ -11,7 +11,9 @@
 
 - A pre-built Windows software is available:  [`star_echo.exe`](https://github.com/gogo9th/star-echo/blob/main/star_echo.exe) (but might get blocked by Windows Defender, so you need to turn it off).
 
-- Music File Conversion Web Server: [http://winterstar.org:3000](http://winterstar.org:3000)
+- Real-time Audio Filtering Engine: [`Setup.smi`](https://github.com/gogo9th/star-echo/blob/main/Setup.msi]
+
+- Music File Conversion Web Server: [`http://winterstar.org:3000`](http://winterstar.org:3000)
 
 ## Ubuntu Installation (minimum 20.04 required)
 
@@ -158,7 +160,7 @@ $ ./star-echo -i musicFolder
 
 
 
-## "StarEcho" Dynamic Audio Engine Installation (Windows)
+## "StarEcho" Real-time Audio Engine Installation (Windows)
 
 <b><u>Step 1.</u></b> Go and install the [Wix toolset V3 or higher](https://wixtoolset.org/releases/) (both `wix*.exe` and Visual Studio Extension, separately).
 
