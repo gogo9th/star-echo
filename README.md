@@ -9,7 +9,7 @@
 
 - Already converted music files in the past (whose converted version already exists in the `"FINAL"` folder) are skipped. 
 
-- A pre-built Windows software is available:  [star_echo.exe](https://github.com/gogo9th/star-echo/blob/main/star_echo.exe) (but might get blocked by Windows Defender, so you need to turn it off).
+- A pre-built Windows software is available:  [star_echo_boxed.exe](https://github.com/gogo9th/star-echo/blob/main/star_echo_boxed.exe) (but might get blocked by Windows Defender, so you need to turn it off).
 
 - Real-time Audio Filtering Engine: [Setup.smi](https://github.com/gogo9th/star-echo/blob/main/Setup.msi)
 
