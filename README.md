@@ -1,5 +1,5 @@
 
-# Star Echo - Ultimate Filters for Music Files and Windows Audio Streams
+# Star Echo - Applying Filters to Music Files & Windows Audio Streams
 
 ## Software Description
 
