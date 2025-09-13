@@ -47,7 +47,7 @@ This software generates the same sound effect as the reverse-engineered [Samsung
 
 <b><u>Step 4.</u></b> Run the created `q2cathedral`.
 ```console
-    $ ./q2cathedral --help 
+$ ./q2cathedral --help 
 Options:
   -h [ --help ]         Display the help message.
   -i [ --input ] arg    Input file(s)/directory.
@@ -90,6 +90,10 @@ Options:
                          concert,
                          cathedral,
                          upscaling
+
+
+# Recursive folder-wide cathedral .flac conversion into the folder FINAL
+$ ./q2cathedral -i musicFolder    
 ```
 
 

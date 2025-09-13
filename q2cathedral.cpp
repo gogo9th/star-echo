@@ -248,7 +248,7 @@ Predefined filters:\n\
     {
         filters.push_back("ch");
         if (silence == -1)
-           silence = 5;
+           silence = 3;
     }
     if (silence == -1)
         silence = 0;
