@@ -9,7 +9,7 @@ const https = require("https");
 const fs = require('fs');
 const { execSync } = require('child_process');
 const UPLOAD_PATH = './public/uploads';
-const CONVERTER_PATH = '../q2cathedral';
+const CONVERTER_PATH = '../star_echo';
 const VOLUME_MATCHER_PATH = 'python3 ../volume-matcher.py';
 const argparse = require('argparse');
 
