@@ -164,15 +164,15 @@ $ ./star-echo -i musicFolder
 
 <b><u>Step 2.</u></b> Go and install [Visual Studio C++ Development](https://visualstudio.microsoft.com/ko/downloads/).
 
-<b><u>Step 2.</u></b> Go and install [PowerShell Core](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.3#install-powershell-using-winget-recommended).
+<b><u>Step 3.</u></b> Go and install [PowerShell Core](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.3#install-powershell-using-winget-recommended) and restart PowerShell.
 
 <b><u>Step 4.</u></b> Build the installer at .
 
 ```console
     $ cd star-echo/StarEcho
-    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln
-    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /p:Configuration="Release"
-    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /p:Configuration="Debug"
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /restore
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /restore /p:Configuration="Release"
+    $ & "C:\Program Files\Microsoft Visual Studio\2022\Community\Msbuild\Current\Bin\MSBuild.exe" .\StarEcho.sln /restore /p:Configuration="Debug"
 ```
 
 <b><u>Step 5.</u></b> The installer is created at `star-echo-main\star-echo-main\StarEcho\Setup\bin\x64\Debug\Setup.msi` and `star-echo-main\star-echo-main\StarEcho\Setup\bin\x64\Release\Setup.msi`.
