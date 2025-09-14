@@ -212,5 +212,5 @@ $ ./star-echo -i musicFolder
         ### or use pm2 ###
         $ pm2 kill
         $ pm2 resurrect
-        $ pm2 start app.js --http
+        $ pm2 start app.js -- --http
 ```
