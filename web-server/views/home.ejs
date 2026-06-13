@@ -242,7 +242,7 @@
 					<span class="field-title">Filters</span>
 					<div class="filter-list">
 						<% ['livecafe', 'cathedral', 'studio', 'rock', 'classical', 'jazz', 'dance', 'ballad', 'club', 'rnb', 'cafe', 'concert'].forEach(function(filter) { %>
-						<label><input type="checkbox" name="filters" value="<%= filter %>" checked> <%= filter %></label>
+						<label><input type="checkbox" name="filters" value="<%= filter %>" <%= (filter === 'livecafe' || filter === 'cathedral') ? 'checked' : '' %>> <%= filter %></label>
 						<% }) %>
 					</div>
 				</div>
