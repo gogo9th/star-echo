@@ -1,22 +1,30 @@
 var express = require('express');
-var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var multer =  require('multer');
 var path = require('path');
-const async = require('async');
-
 const https = require("https");
 const fs = require('fs');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 const UPLOAD_PATH = './public/uploads';
+const DATA_FILE = path.resolve(__dirname, 'data', 'pics.json');
 const CONVERTER_PATH = '../star_echo';
-const VOLUME_MATCHER_PATH = 'python3 ../volume-matcher.py';
 const argparse = require('argparse');
 
-var picSchema= new mongoose.Schema({
-	picpath:String
-})
-
+const FILTERS = [
+	'livecafe',
+	'cathedral',
+	'studio',
+	'rock',
+	'classical',
+	'jazz',
+	'dance',
+	'ballad',
+	'club',
+	'rnb',
+	'cafe',
+	'concert'
+];
 
 var storage = multer.diskStorage({
 	destination:function(req,file,cb){
@@ -30,10 +38,87 @@ var upload = multer({storage:storage})
 
 var app = express();
 
-mongoose.connect('mongodb://localhost:27017/pics',{useNewUrlParser: true, useUnifiedTopology: true})
-.then(()=>console.log('connected to mongoose')).catch(err=>console.log('error ocured',err));
+function loadPics() {
+	try {
+		var data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+		return Array.isArray(data) ? data : [];
+	}
+	catch (err) {
+		if (err.code === 'ENOENT') {
+			return [];
+		}
+		console.log('error reading pics data', err);
+		return [];
+	}
+}
 
-var picModel = mongoose.model('picsdemo',picSchema);
+function savePics(data) {
+	fs.mkdirSync(path.dirname(DATA_FILE), {recursive: true});
+	var tempFile = DATA_FILE + '.tmp';
+	fs.writeFileSync(tempFile, JSON.stringify(data, null, 2));
+	fs.renameSync(tempFile, DATA_FILE);
+}
+
+function deletePics(query) {
+	if (!query) {
+		savePics([]);
+		return;
+	}
+
+	var data = loadPics().filter(function (item) {
+		return Object.keys(query).some(function (key) {
+			return item[key] !== query[key];
+		});
+	});
+	savePics(data);
+}
+
+function savePic(picpath) {
+	var data = loadPics();
+	var id = crypto.randomBytes(12).toString('hex');
+	var item = {_id: id, id: id, picpath: picpath};
+	data.push(item);
+	savePics(data);
+	return item;
+}
+
+function escapeShellPathPart(value) {
+	return value.replace(/["\\$`]/g, '\\$&');
+}
+
+function selectedFilters(value) {
+	var values = Array.isArray(value) ? value : (value ? [value] : []);
+	return values.filter(function (filter) {
+		return FILTERS.indexOf(filter) !== -1;
+	});
+}
+
+function convertedFilename(inputPath, filter) {
+	return inputPath.substr(0, inputPath.lastIndexOf('.')) + ' - ' + filter.toUpperCase() + '.flac';
+}
+
+function convertFile(inputPath, filter) {
+	var outputPath = convertedFilename(inputPath, filter);
+	deletePics({picpath: outputPath});
+
+	var cmd = 'rm -f "' + escapeShellPathPart('public/' + outputPath) + '"';
+	console.log("CMD0: " + cmd);
+	execSync(cmd);
+
+	cmd = CONVERTER_PATH + ' -n -s 5 -i "' + escapeShellPathPart('public/' + inputPath) + '" -f ' + filter + ' -o "' + escapeShellPathPart('public/' + outputPath) + '"';
+	console.log("CMD1: " + cmd);
+	execSync(cmd);
+
+	return savePic(outputPath);
+}
+
+function sendUploadError(req, res, msg) {
+	if (req.body && req.body.ajax === '1') {
+		res.status(400).json({error: msg});
+		return;
+	}
+	res.redirect('/error?msg=' + encodeURIComponent('"' + msg + '"'));
+}
 
 app.set('views',path.resolve(__dirname,'views'));
 app.set('view engine','ejs');
@@ -42,149 +127,118 @@ var pathh = path.resolve(__dirname,'public');
 app.use(express.static(pathh));
 app.use(bodyParser.urlencoded({extended:false}));
 
+app.get('/thumbnail.png',(req,res)=>{
+	res.sendFile(path.resolve(__dirname,'views','thumbnail.png'));
+});
+
 
 app.get('/',(req,res)=>{
 console.log("Received");
 	if (!req.query.id)
-	{	picModel.deleteMany({}).exec();
+	{	deletePics();
 		//console.log("Deleted All");
 	}
 	else
 		console.log(req.query.id);
 
-	picModel.find((err,data)=>{
-		if(err){
-			console.log(err);
-		}
-		else if (data.length == 0){
-			res.render('home',{data:{}});
-		}
-		else
-		{
-			for (var i = 0; i < data.length; i++)
-			{	// if a previous visitor, then continuously keep the database	
-				if (data[i].id === req.query.id) 
-				{	//console.log("Match");
-					// ??? if the id is ever registered, then let her download ALL music files in the server
-					res.render('home',{data:data});
-					return;
-				}
+	var data = loadPics();
+	if (data.length == 0){
+		res.render('home',{data:{}});
+	}
+	else
+	{
+		for (var i = 0; i < data.length; i++)
+		{	// if a previous visitor, then continuously keep the database	
+			if (data[i].id === req.query.id) 
+			{	//console.log("Match");
+				// ??? if the id is ever registered, then let her download ALL music files in the server
+				res.render('home',{data:data});
+				return;
 			}
-			picModel.deleteMany({}).exec();
-//console.log("No Match");
-			// Delete files in the database
-			/*fs.readdir(UPLOAD_PATH, (err, files) => {
-			  if (err) throw err;
-
-			  for (const file of files) {
-				 fs.unlink(path.join(UPLOAD_PATH, file), err => {
-					if (err) throw err;
-				 });
-			  }
-			});
-			*/
-			res.render('home',{data:{}});
 		}
-	});
-});
+		deletePics();
+//console.log("No Match");
+		// Delete files in the database
+		/*fs.readdir(UPLOAD_PATH, (err, files) => {
+		  if (err) throw err;
 
+		  for (const file of files) {
+			 fs.unlink(path.join(UPLOAD_PATH, file), err => {
+				if (err) throw err;
+			 });
+		  }
+		});
+		*/
+		res.render('home',{data:{}});
+	}
+});
 
 app.post('/', upload.single('pic'), (req,res)=>{
 	if (!req.file || !req.file.originalname) 
-	{	res.redirect('/error?msg="File is not uploaded"');
+	{	sendUploadError(req, res, 'File is not uploaded');
 		return;
 	}
 	var x = 'uploads/'+req.file.originalname;
-	var ext = path.extname(x);
+	var ext = path.extname(x).toLowerCase();
 	if (ext !== '.wma' && ext !== '.wav' && ext !== '.mp3' && ext !== '.flac')
 	{
-		res.redirect('/error?msg="Only the following file extensions can be uploaded: .mp3, .flac, .wav, .wma"');
+		sendUploadError(req, res, 'Only the following file extensions can be uploaded: .mp3, .flac, .wav, .wma');
 		return;
 	}
-	var x_converted = [];
-	//if (req.query.filter == 'livecafe')
-	x_converted[0] = {filename: x.substr(0, x.lastIndexOf('.')) + ' - LIVE CAFE.flac', filter: '-f ch,13,10'};
-	x_converted[1] = {filename: x.substr(0, x.lastIndexOf('.')) + ' - CATHEDRAL.flac', filter: ''};
-	//x_converted[2] = {filename: x.substr(0, x.lastIndexOf('.')) + ' - OPERA2.flac', filter: '-f rnb -f ch,10,10'};
-	//x_converted[3] = {filename: x.substr(0, x.lastIndexOf('.')) + ' - RnB.flac', filter: '-f rnb'};
 
-		//.replace(/[\\$'"]/g, "\\$&")
+	var filters = selectedFilters(req.body.filter || req.body.filters);
+	if (filters.length === 0)
+	{
+		sendUploadError(req, res, 'Choose at least one filter');
+		return;
+	}
 
-	//res.count = 0;
-	//res.countMax = x_converted.length;
-	var data_id;
-	var isError = false;
-	async.each(x_converted, function(obj, callback) {
-	//console.log(obj);
-	//console.log(picModel.find({picpath: obj.filename}));
-		picModel.deleteMany({picpath: obj.filename}).exec();
-		var temp = new picModel( { picpath:obj.filename } );
-		temp.save((err,data)=>{
-			if(err) {
-				console.log(err);
-			} 
+	if (req.body.reset === '1')
+	{
+		deletePics();
+	}
 
-			var cmd = 'rm -f "public/' + obj.filename.replace('"', '\\"') + '"';
-			console.log("CMD0: " + cmd);
-			var stdout = execSync(cmd);
-
-			var cmd = CONVERTER_PATH + ' -n -s 5 -i "public/' + x.replace('"', '\\"') + '" ' + obj.filter +  ' -o "public/' + obj.filename.replace('"', '\\"') + '"';
-			console.log("CMD1: " + cmd);
-			var stdout = execSync(cmd);
-
-			//cmd = VOLUME_MATCHER_PATH + ' "public/' + x.replace('"', '\\"') +  '" "public/' + obj.filename.replace('"', '\\"') + '"';
-			//console.log("CMD2: " + cmd);
-			//var stdout = execSync(cmd);
-			//cmd = 'mv "public/' + x_converted[i].replace('"', '\\"') + ' - GAINED.flac" ' +  ' "public/' + x_converted[i].replace('"', '\\"') + '"';
-			//console.log("CMD3: " + cmd);
-			//execSync(cmd); 
-			//if (fs.existsSync('public/' + x_converted[i]))
-			//{	//var temp_converted = new picModel( { picpath:x_converted } );
-			//}
-//console.log("id: " + data.id);		
-			//picModel.find({id: data.id}).deleteOne().exec();
-			//if (!fs.existsSync('public/' + obj.filename))
-			//	isError = true;
-			//else
+	try {
+		var data_id;
+		var results = [];
+		for (var i = 0; i < filters.length; i++)
+		{
+			var data = convertFile(x, filters[i]);
 			data_id = data.id;
-			callback();
-		});
-	}, function (err){
-		 if(err || isError) { 
-			  //if any of your save produced error, handle it here
-				console.log(err);
-				res.redirect('/error?msg="Something is wrong with your file: ' + req.file.originalname + '"');
-		 } 
-		 else {
-				// no errors, all four object should be in db
-//console.log("data_id: " + data_id);
-//console.log(res);
-				res.redirect('/?id=' + data_id);
-		 }
+			results.push(data);
 		}
-	);
+
+		if (req.body.ajax === '1')
+		{
+			res.json({id: data_id, data: results});
+			return;
+		}
+		res.redirect('/?id=' + data_id);
+	}
+	catch (err) {
+		console.log(err);
+		sendUploadError(req, res, 'Something is wrong with your file: ' + req.file.originalname);
+	}
 });
 
 app.get('/error',(req,res)=>{
-	picModel.deleteMany({}).exec();
+	deletePics();
 	res.render('error',{data: req.query.msg});
 });
 
 app.get('/download/:id',(req,res)=>{
-	picModel.find({_id:req.params.id},(err,data)=>{
-		if(err){
-			console.log(err);
-		}
-		else if (!data[0])
-		{
-			res.redirect('/error?msg="The file does not exist');
-			return;
-		}
-		else{
-			var x= __dirname+'/public/'+data[0].picpath;
-			res.download(x);
-		}
+	var data = loadPics().filter(function (item) {
+		return item._id === req.params.id;
 	});
+	if (!data[0])
+	{
+		res.redirect('/error?msg="The file does not exist');
+		return;
+	}
+	else{
+		var x= __dirname+'/public/'+data[0].picpath;
+		res.download(x);
+	}
 });
 
 var parser = new argparse.ArgumentParser({

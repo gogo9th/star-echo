@@ -922,3 +922,4 @@ bool MediaProcess::do_process(const FileItem & item, std::vector<float> & normal
     }
     return r == 0;
 }
+

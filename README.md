@@ -84,7 +84,7 @@ Options:
                          dance,
                          ballad,
                          club,
-                         RnB,
+                         rnb,
                          cafe,
                          livecafe,
                          concert,
@@ -93,7 +93,11 @@ Options:
 
 
 # Recursive folder-wide cathedral .flac conversion into the folder FINAL
-$ ./star-echo -i musicFolder    
+$ ./star-echo -i musicFolder   
+
+ 
+# A single music file conversion
+$ ./star_echo --input web-server/public/uploads/test.mp3 --output test-livecafe.flac --filter livecafe
 ```
 
 
@@ -212,5 +216,5 @@ $ ./star-echo -i musicFolder
         ### or use pm2 ###
         $ pm2 kill
         $ pm2 resurrect
-        $ pm2 start app.js --http
+        $ pm2 start app.js -- --http
 ```

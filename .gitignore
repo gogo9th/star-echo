@@ -9,10 +9,11 @@ q2cathedral
 *.un~
 cscope.*
 tags
+star_echo
 .vs
 web-server/node_modules/
 web-server/public/
-
+*.flac
 *.user
 /Ultraverse/Setup/bin
 /CMakeFiles
