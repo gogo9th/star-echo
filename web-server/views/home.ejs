@@ -1,63 +1,348 @@
- <!DOCTYPE html lang="en">
- <head>
-		<title>Music Converter</title>
-		<h1>Music Converter</h1>
-      <h1>(+ Cathedral & LiveCafe Effects)</h1>
-		<h5> 1. Upload your music file (.mp3, .flac, .wav, or .wma). </h5>
-		<h5> 2. Download the converted music (with the Cathedral and Live Cafe effects). </h5>
- </head>
- <body>
-		<script>
-			var remember;
-         function wait0(x)
-         {  remember = x.parentElement.parentElement;
-         }
-         function wait(x)
-         {  //x.style.display = 'none';
-            //x.style.disabled = true;
-				remember.style.display = 'none';
-				remember.style.disabled = true;
-            document.getElementById("thetext").innerHTML = "Uploading and processing (takes 30 seconds)...";
-         }
-		</script>
-      <div  id='div1'>
-        <form action="/" method="POST" enctype="multipart/form-data" id='form1'>
-          <input type="file" name="pic" id="pic1" onclick='wait0(this)' ><br>
-          <input type="submit" value='Upload' onclick='wait(this)' id='sub1'>
-        </form>
-        <!-- <form action="/?filter=livecafe" method="POST" enctype="multipart/form-data" id='form2'>
-          <input type="file" name="pic" id="pic2" onclick='wait0(this)' ><br>
-          <input type="submit" value='Add the "Live Cafe" Effect' onclick='wait(this)' id='sub2'>
-        </form> -->
-      </div>
-	<div id='thetext'></div>
-	<br><br><br><br>
-    <% if(data.length > 0) {%>
-	<h3> Converted Musics </h3>
-      <table>
-           <thead>
-               <tr>
-                   <td height="50">
-                   </td>
-                   <td height="50">
-                   </td>
-               </tr>
-           </thead>
-           <tbody>
-               <% for(var i=0; i< data.length; i++) {%>
-               <tr>
-                <td height="30">
-                <form action="/download/<%= data[i]._id%>">
-                 <input type="submit" value="Download">
-                </form>
-                   </td>
-                   <td height="30">
-							<p><%= data[i].picpath.substring('uploads/'.length) %></p>
-                   </td>
-               </tr>
-               <% } %>
-           </tbody>
-      </table>
-      <% } %>  
- </body>
- </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Music Converter</title>
+	<style>
+		:root {
+			--bg: #f6f7f9;
+			--surface: #ffffff;
+			--text: #1f2933;
+			--muted: #657180;
+			--line: #d9dee5;
+			--accent: #1f7a5c;
+			--accent-dark: #166349;
+			--danger: #b42318;
+			--shadow: 0 14px 32px rgba(31, 41, 51, 0.08);
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			font-family: Arial, sans-serif;
+			background: var(--bg);
+			color: var(--text);
+		}
+
+		main {
+			width: min(920px, calc(100% - 32px));
+			margin: 40px auto;
+		}
+
+		header {
+			margin-bottom: 18px;
+		}
+
+		.hero-image {
+			display: block;
+			width: 100%;
+			max-height: 240px;
+			object-fit: cover;
+			border-radius: 8px;
+			border: 1px solid var(--line);
+			box-shadow: var(--shadow);
+			margin-bottom: 18px;
+		}
+
+		h1 {
+			margin: 0;
+			font-size: 32px;
+			font-weight: 700;
+			line-height: 1.15;
+		}
+
+		.subtitle {
+			margin: 8px 0 0;
+			color: var(--muted);
+			font-size: 15px;
+		}
+
+		.panel {
+			background: var(--surface);
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			box-shadow: var(--shadow);
+			padding: 22px;
+		}
+
+		.form-grid {
+			display: grid;
+			gap: 18px;
+		}
+
+		.field-title {
+			display: block;
+			margin-bottom: 8px;
+			font-size: 13px;
+			font-weight: 700;
+			color: var(--muted);
+			text-transform: uppercase;
+		}
+
+		input[type="file"] {
+			width: 100%;
+			padding: 11px;
+			border: 1px solid var(--line);
+			border-radius: 6px;
+			background: #fbfcfd;
+		}
+
+		.filter-list {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 10px;
+		}
+
+		.filter-list label {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			min-height: 40px;
+			padding: 9px 10px;
+			border: 1px solid var(--line);
+			border-radius: 6px;
+			background: #fbfcfd;
+			font-size: 14px;
+			cursor: pointer;
+		}
+
+		.filter-list label:has(input:checked) {
+			border-color: var(--accent);
+			background: #eef8f3;
+		}
+
+		.actions {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+		}
+
+		button,
+		input[type="submit"] {
+			border: 0;
+			border-radius: 6px;
+			background: var(--accent);
+			color: #fff;
+			font-size: 15px;
+			font-weight: 700;
+			padding: 11px 18px;
+			cursor: pointer;
+		}
+
+		button:hover,
+		input[type="submit"]:hover {
+			background: var(--accent-dark);
+		}
+
+		#errorText {
+			color: var(--danger);
+			font-size: 14px;
+		}
+
+		#progressBox {
+			display: none;
+			align-items: center;
+			gap: 12px;
+			margin-top: 18px;
+			padding: 14px 16px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: var(--surface);
+		}
+
+		.spinner {
+			width: 22px;
+			height: 22px;
+			border: 3px solid #d8eee5;
+			border-top-color: var(--accent);
+			border-radius: 50%;
+			animation: spin 0.8s linear infinite;
+			flex: 0 0 auto;
+		}
+
+		@keyframes spin { to { transform: rotate(360deg); } }
+
+		.results {
+			margin-top: 22px;
+		}
+
+		.results h2 {
+			margin: 0 0 10px;
+			font-size: 19px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			background: var(--surface);
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: var(--shadow);
+		}
+
+		td {
+			padding: 10px 14px;
+			border-top: 1px solid var(--line);
+			vertical-align: middle;
+		}
+
+		tr:first-child td {
+			border-top: 0;
+		}
+
+		td:first-child {
+			width: 118px;
+		}
+
+		td p {
+			margin: 0;
+			word-break: break-word;
+		}
+
+		.download-form {
+			margin: 0;
+		}
+
+		.download-form input[type="submit"] {
+			padding: 8px 12px;
+			font-size: 13px;
+			background: #273444;
+		}
+
+		.download-form input[type="submit"]:hover {
+			background: #1f2933;
+		}
+
+		@media (max-width: 720px) {
+			main { margin: 24px auto; }
+			.filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<header>
+			<img class="hero-image" src="/thumbnail.png" alt="Music Converter">
+			<h1>Music Converter</h1>
+			<p class="subtitle">Upload a music file, choose filters, then download the converted tracks.</p>
+		</header>
+
+		<section class="panel" id="div1">
+			<form action="/" method="POST" enctype="multipart/form-data" id="form1" class="form-grid">
+				<div>
+					<label class="field-title" for="pic1">Music file</label>
+					<input type="file" name="pic" id="pic1">
+				</div>
+
+				<div>
+					<span class="field-title">Filters</span>
+					<div class="filter-list">
+						<% ['livecafe', 'cathedral', 'studio', 'rock', 'classical', 'jazz', 'dance', 'ballad', 'club', 'rnb', 'cafe', 'concert'].forEach(function(filter) { %>
+						<label><input type="checkbox" name="filters" value="<%= filter %>" checked> <%= filter %></label>
+						<% }) %>
+					</div>
+				</div>
+
+				<div class="actions">
+					<input type="submit" value="Convert" id="sub1">
+					<div id="errorText"></div>
+				</div>
+			</form>
+		</section>
+
+		<div id="progressBox"><div class="spinner"></div><div id="thetext"></div></div>
+
+		<% if(data.length > 0) {%>
+		<section class="results">
+			<h2>Converted Musics</h2>
+			<table>
+				<tbody>
+					<% for(var i=0; i< data.length; i++) {%>
+					<tr>
+						<td>
+							<form class="download-form" action="/download/<%= data[i]._id%>">
+								<input type="submit" value="Download">
+							</form>
+						</td>
+						<td><p><%= data[i].picpath.substring('uploads/'.length) %></p></td>
+					</tr>
+					<% } %>
+				</tbody>
+			</table>
+		</section>
+		<% } %>
+	</main>
+
+	<script>
+		function selectedFilters() {
+			return Array.prototype.slice.call(document.querySelectorAll('input[name="filters"]:checked')).map(function (item) {
+				return item.value;
+			});
+		}
+
+		function setBusy(isBusy) {
+			document.getElementById('div1').style.display = isBusy ? 'none' : 'block';
+			document.getElementById('progressBox').style.display = isBusy ? 'flex' : 'none';
+		}
+
+		async function uploadOne(file, filter, reset) {
+			var formData = new FormData();
+			formData.append('pic', file);
+			formData.append('filter', filter);
+			formData.append('ajax', '1');
+			if (reset) {
+				formData.append('reset', '1');
+			}
+
+			var response = await fetch('/', {method: 'POST', body: formData});
+			var body = await response.json().catch(function () { return {}; });
+			if (!response.ok) {
+				throw new Error(body.error || 'Conversion failed');
+			}
+			return body;
+		}
+
+		async function convertSelected(event) {
+			event.preventDefault();
+			var errorText = document.getElementById('errorText');
+			var statusText = document.getElementById('thetext');
+			var fileInput = document.getElementById('pic1');
+			var checked = selectedFilters();
+
+			errorText.textContent = '';
+			if (!fileInput.files || fileInput.files.length === 0) {
+				errorText.textContent = 'File is not uploaded';
+				return;
+			}
+			if (checked.length === 0) {
+				errorText.textContent = 'Choose at least one filter';
+				return;
+			}
+
+			setBusy(true);
+			var lastId = '';
+			try {
+				for (var i = 0; i < checked.length; i++) {
+					statusText.textContent = 'Processing ' + checked[i] + ' (' + (i + 1) + '/' + checked.length + ')';
+					var result = await uploadOne(fileInput.files[0], checked[i], i === 0);
+					lastId = result.id;
+				}
+				window.location.href = '/?id=' + encodeURIComponent(lastId);
+			}
+			catch (err) {
+				setBusy(false);
+				errorText.textContent = err.message;
+				statusText.textContent = '';
+			}
+		}
+
+		window.addEventListener('DOMContentLoaded', function () {
+			document.getElementById('form1').addEventListener('submit', convertSelected);
+		});
+	</script>
+</body>
+</html>
